@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Label } from "/src/components/ui/label";
+import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import type { ScrambleSettingsType } from "./ScrambleGenerator";
 
@@ -94,3 +94,4 @@ export default function ScrambleSettings({ value, onChange }: Props) {
     </div>
   );
 }
+
