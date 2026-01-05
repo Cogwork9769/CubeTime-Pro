@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import PuzzleSelector from "/src/components/timer/PuzzleSelector";
-import ScrambleDisplay from "/src/components/timer/ScrambleDisplay";
-import TimerDisplay from "/src/components/timer/TimerDisplay";
-import InspectionTimer from "/src/components/timer/InspectionTimer";
-import ScrambleSettings from "/src/components/timer/ScrambleSettings";
+import PuzzleSelector from "../components/timer/PuzzleSelector";
+import ScrambleDisplay from "../components/timer/ScrambleDisplay";
+import TimerDisplay from "../components/timer/TimerDisplay";
+import InspectionTimer from "../components/timer/InspectionTimer";
+import ScrambleSettings from "../components/timer/ScrambleSettings";
 // ✅ ScrambleGenerator: value + types split
 import { generateScramble } from "../components/timer/ScrambleGenerator";
 import type {
@@ -286,3 +286,4 @@ export default function TimerPage() {
     </div>
   );
 }
+
