@@ -283,12 +283,16 @@ export default function TimerPage() {
         <div className="mt-4 border border-gray-700 rounded-lg p-3">
           <ScrambleSettings value={settings} onChange={setSettings} />
         </div>
+        <StatsPanel solves={solves} />
+
+        <SolveList solves={solves} onUpdatePenalty={handleUpdatePenalty} />
 
         <SolveList solves={solves} onUpdatePenalty={handleUpdatePenalty} />
       </div>
     </div>
   );
 }
+
 
 
 
