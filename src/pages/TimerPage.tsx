@@ -20,6 +20,8 @@ import type { Solve, SolvePenalty } from "../components/timer/SolveList";
 const STORAGE_SOLVES_KEY = "cubeTimer_solves";
 const STORAGE_SETTINGS_KEY = "cubeTimer_scrambleSettings";
 
+import StatsPanel from "./StatsPanel";
+
 function loadSolves(): Solve[] {
   try {
     const raw = localStorage.getItem(STORAGE_SOLVES_KEY);
@@ -287,5 +289,6 @@ export default function TimerPage() {
     </div>
   );
 }
+
 
 
