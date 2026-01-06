@@ -1,6 +1,11 @@
 import { best, worst, average, ao5, ao12, stdev } from "../../utils/stats";
+import type { Solve } from "../../utils/stats";
 
-export default function StatsPanel({ solves }) {
+type StatsPanelProps = {
+  solves: Solve[];
+};
+
+export default function StatsPanel({ solves }: StatsPanelProps) {
   return (
     <div className="p-4 bg-gray-800 rounded-lg text-white">
       <div>Best: {best(solves)}</div>
