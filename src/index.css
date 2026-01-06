@@ -1,44 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Base44-style cube timer theme */
-@layer base {
-  html, body {
-    @apply bg-neutral-900 text-neutral-100 antialiased h-full w-full;
-  }
-
-  #root {
-    @apply h-full w-full flex flex-col items-center justify-start;
-  }
-
-  /* Timer text */
-  .timer-display {
-    @apply text-7xl md:text-8xl font-bold tracking-tight text-neutral-100;
-  }
-
-  /* Scramble text */
-  .scramble-display {
-    @apply text-lg md:text-xl text-neutral-300 font-mono mt-4;
-  }
-
-  /* Section spacing */
-  .section {
-    @apply w-full max-w-2xl px-4 mt-6;
-  }
-
-  /* Card-like containers */
-  .panel {
-    @apply bg-neutral-800/50 border border-neutral-700 rounded-lg p-4;
-  }
-
-  /* Buttons */
-  .btn {
-    @apply bg-neutral-700 hover:bg-neutral-600 text-neutral-100 px-4 py-2 rounded-md transition;
-  }
-
-  /* Labels */
-  label {
-    @apply text-neutral-300;
-  }
+body {
+  background: red;
 }
