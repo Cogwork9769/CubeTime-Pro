@@ -15,8 +15,8 @@ export type Solve = {
 type Props = {
   solves: Solve[];
   onUpdatePenalty: (id: string, penalty: SolvePenalty) => void;
+  onDeleteSolve: (id: string) => void;   // ⭐ add this
 };
-
 function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
@@ -87,3 +87,4 @@ export default function SolveList({ solves, onUpdatePenalty }: Props) {
     </div>
   );
 }
+
