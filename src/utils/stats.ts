@@ -1,14 +1,13 @@
-// Types
+// Use the same Solve type your TimerPage uses
 export type Solve = {
-  time: number;        // raw time in milliseconds
-  penalty?: "+2" | "DNF" | null;
+  finalTimeMs: number;
+  penalty: "OK" | "+2" | "DNF";
 };
 
-// Convert a solve to its effective time
+// Convert a solve to a usable numeric time
 export function effectiveTime(solve: Solve): number | null {
   if (solve.penalty === "DNF") return null;
-  if (solve.penalty === "+2") return solve.time + 2000;
-  return solve.time;
+  return solve.finalTimeMs;
 }
 
 // Filter out DNFs for stats that require valid times
@@ -54,10 +53,11 @@ export function aoN(solves: Solve[], N: number): number | null {
   const numeric = times.filter((t): t is number => t !== null);
   numeric.sort((a, b) => a - b);
 
-  const trimmed = numeric.slice(1, numeric.length - 1);
-  if (trimmed.length === 0) return null;
+  if (numeric.length <= 2) return null;
 
+  const trimmed = numeric.slice(1, numeric.length - 1);
   const sum = trimmed.reduce((a, b) => a + b, 0);
+
   return sum / trimmed.length;
 }
 
