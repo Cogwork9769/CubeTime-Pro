@@ -14,12 +14,7 @@ export default function StatsPanel({ solves }: StatsPanelProps) {
       <div>Ao5: {formatTime(ao5(solves))}</div>
       <div>Ao12: {formatTime(ao12(solves))}</div>
       <div>Std Dev: {formatTime(stdev(solves))}</div>
-      <div>Best: {best(solves)}</div>
-      <div>Worst: {worst(solves)}</div>
-      <div>Average: {average(solves)}</div>
-      <div>Ao5: {ao5(solves)}</div>
-      <div>Ao12: {ao12(solves)}</div>
-      <div>Std Dev: {stdev(solves)}</div>
+
     </div>
   );
 }
