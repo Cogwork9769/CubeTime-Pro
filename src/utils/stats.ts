@@ -81,3 +81,7 @@ export function stdev(solves: Solve[]): number | null {
 
   return Math.sqrt(variance);
 }
+export function formatTime(ms: number | null): string {
+  if (ms === null) return "DNF";
+  return (ms / 1000).toFixed(3);
+}
