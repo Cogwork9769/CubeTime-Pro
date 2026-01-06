@@ -1,4 +1,6 @@
 // Use the same Solve type your TimerPage uses
+import type { Solve } from "../types/solve";
+
 export type Solve = {
   finalTimeMs: number;
   penalty: "OK" | "+2" | "DNF";
