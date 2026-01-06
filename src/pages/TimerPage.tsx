@@ -15,6 +15,7 @@ import type {
 import SolveList from "../components/timer/SolveList";
 import type { Solve, SolvePenalty } from "../components/timer/SolveList";
 
+<div className="test-box">Tailwind is working</div>
 
 const STORAGE_SOLVES_KEY = "cubeTimer_solves";
 const STORAGE_SETTINGS_KEY = "cubeTimer_scrambleSettings";
@@ -286,4 +287,5 @@ export default function TimerPage() {
     </div>
   );
 }
+
 
