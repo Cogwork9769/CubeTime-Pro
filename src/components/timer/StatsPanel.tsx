@@ -1,4 +1,4 @@
-import { best, worst, average, ao5, ao12, stdev } from "../../utils/stats";
+import { best, worst, average, ao5, ao12, stdev, formatTime } from "../../utils/stats";
 import type { Solve } from "../../utils/stats";
 
 type StatsPanelProps = {
