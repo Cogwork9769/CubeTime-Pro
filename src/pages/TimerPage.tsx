@@ -1,27 +1,28 @@
 import { useEffect, useState } from "react";
+
 import PuzzleSelector from "../components/timer/PuzzleSelector";
 import ScrambleDisplay from "../components/timer/ScrambleDisplay";
 import TimerDisplay from "../components/timer/TimerDisplay";
 import InspectionTimer from "../components/timer/InspectionTimer";
 import ScrambleSettings from "../components/timer/ScrambleSettings";
-// ✅ ScrambleGenerator: value + types split
+
 import { generateScramble } from "../components/timer/ScrambleGenerator";
 import type {
   PuzzleType,
   ScrambleSettingsType,
 } from "../components/timer/ScrambleGenerator";
 
-// ✅ SolveList: default value + types split
 import SolveList from "../components/timer/SolveList";
 import type { Solve, SolvePenalty } from "../components/timer/SolveList";
 
-<div className="test-box">Tailwind is working</div>
+import StatsPanel from "../components/timer/StatsPanel";
 
 const STORAGE_SOLVES_KEY = "cubeTimer_solves";
 const STORAGE_SETTINGS_KEY = "cubeTimer_scrambleSettings";
 
-import StatsPanel from "../components/timer/StatsPanel";
-
+// -------------------------------
+// Load + Save Helpers
+// -------------------------------
 function loadSolves(): Solve[] {
   try {
     const raw = localStorage.getItem(STORAGE_SOLVES_KEY);
@@ -53,12 +54,13 @@ function loadSettings(): ScrambleSettingsType {
   }
 }
 
+// -------------------------------
+// Main Component
+// -------------------------------
 export default function TimerPage() {
   const [puzzle, setPuzzle] = useState<PuzzleType>("3x3");
-  const [scramble, setScramble] = useState<string>("");
-  const [settings, setSettings] = useState<ScrambleSettingsType>(
-    loadSettings()
-  );
+  const [scramble, setScramble] = useState("");
+  const [settings, setSettings] = useState<ScrambleSettingsType>(loadSettings);
 
   const [isRunning, setIsRunning] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -67,13 +69,18 @@ export default function TimerPage() {
 
   const [inspectionActive, setInspectionActive] = useState(false);
   const [inspectionStart, setInspectionStart] = useState<number | null>(null);
-  const [inspectionTimeLeft, setInspectionTimeLeft] = useState<number>(15);
+  const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
   const [inspectionPenalty, setInspectionPenalty] =
     useState<SolvePenalty>("OK");
 
   const [solves, setSolves] = useState<Solve[]>(loadSolves);
 
-  // Generate scramble
+  // Prevent double solves
+  const [solveLocked, setSolveLocked] = useState(false);
+
+  // -------------------------------
+  // Scramble
+  // -------------------------------
   function regenerateScramble() {
     const s = generateScramble(puzzle, settings);
     setScramble(s);
@@ -83,151 +90,73 @@ export default function TimerPage() {
     regenerateScramble();
   }, [puzzle, settings]);
 
-  // Save solves when they change
-  useEffect(() => {
-    saveSolves(solves);
-  }, [solves]);
+  // -------------------------------
+  // Save solves + settings
+  // -------------------------------
+  useEffect(() => saveSolves(solves), [solves]);
 
-  // Save settings when they change
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
     } catch {}
   }, [settings]);
 
-  // Timer loop
+  // -------------------------------
+  // Timer Loop
+  // -------------------------------
   useEffect(() => {
     if (!isRunning || startTime === null) return;
 
     let frame: number;
     const tick = () => {
-      const now = performance.now();
-      setTimeMs(now - startTime);
+      setTimeMs(performance.now() - startTime);
       frame = requestAnimationFrame(tick);
     };
-    frame = requestAnimationFrame(tick);
 
+    frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [isRunning, startTime]);
 
-  // Inspection loop
+  // -------------------------------
+  // Inspection Loop
+  // -------------------------------
   useEffect(() => {
     if (!inspectionActive || inspectionStart === null) return;
 
     let frame: number;
     const tick = () => {
-      const now = performance.now();
-      const elapsed = (now - inspectionStart) / 1000;
+      const elapsed = (performance.now() - inspectionStart) / 1000;
       const left = 15 - elapsed;
       setInspectionTimeLeft(left);
 
-      if (left <= -2) {
-        // DNF threshold
-        setInspectionPenalty("DNF");
-      } else if (left <= 0) {
-        setInspectionPenalty("+2");
-      } else {
-        setInspectionPenalty("OK");
-      }
+      if (left <= -2) setInspectionPenalty("DNF");
+      else if (left <= 0) setInspectionPenalty("+2");
+      else setInspectionPenalty("OK");
 
       frame = requestAnimationFrame(tick);
     };
-    frame = requestAnimationFrame(tick);
 
+    frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [inspectionActive, inspectionStart]);
 
-  // Desktop: spacebar hold-to-start, release-to-go, press-to-stop
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.code === "Space") {
-        e.preventDefault();
-        if (!isRunning && !inspectionActive) {
-          setIsReady(true);
-        }
-      }
-    }
-
-    function handleKeyUp(e: KeyboardEvent) {
-      if (e.code === "Space") {
-        e.preventDefault();
-
-        // If ready but not running: start inspection
-        if (isReady && !isRunning) {
-          setIsReady(false);
-          setInspectionActive(true);
-          setInspectionStart(performance.now());
-          setInspectionTimeLeft(15);
-          return;
-        }
-
-        // If inspection active: start solve
-        if (inspectionActive) {
-          setInspectionActive(false);
-          setInspectionStart(null);
-          setInspectionTimeLeft(15);
-
-          const now = performance.now();
-          setStartTime(now);
-          setTimeMs(0);
-          setIsRunning(true);
-          return;
-        }
-
-        // If running: stop solve
-        if (isRunning) {
-          stopSolve();
-        }
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [isRunning, isReady, inspectionActive, inspectionStart, inspectionPenalty]);
-
-  // Mobile / click: tap to start inspection, tap again to start, tap to stop
-  function handleTap() {
-    // If running: stop
-    if (isRunning) {
-      stopSolve();
-      return;
-    }
-
-    // If inspection active: start solve
-    if (inspectionActive) {
-      setInspectionActive(false);
-      setInspectionStart(null);
-      setInspectionTimeLeft(15);
-
-      const now = performance.now();
-      setStartTime(now);
-      setTimeMs(0);
-      setIsRunning(true);
-      return;
-    }
-
-    // If idle: start inspection
-    if (!isRunning && !inspectionActive) {
-      setInspectionActive(true);
-      setInspectionStart(performance.now());
-      setInspectionTimeLeft(15);
-    }
-  }
-
+  // -------------------------------
+  // Stop Solve (bulletproof)
+  // -------------------------------
   function stopSolve() {
     if (!isRunning || startTime === null) return;
+    if (solveLocked) return;
+
+    setSolveLocked(true);
+    setTimeout(() => setSolveLocked(false), 200);
+
+    setIsRunning(false);
 
     const now = performance.now();
     const rawTime = now - startTime;
     let finalTime = rawTime;
 
-    if (inspectionPenalty === "+2") {
-      finalTime += 2000;
-    }
+    if (inspectionPenalty === "+2") finalTime += 2000;
 
     const solve: Solve = {
       id: crypto.randomUUID(),
@@ -240,25 +169,113 @@ export default function TimerPage() {
     };
 
     setSolves((prev) => [...prev, solve]);
-    setIsRunning(false);
+
     setStartTime(null);
     setTimeMs(0);
     setInspectionPenalty("OK");
     regenerateScramble();
   }
 
+  // -------------------------------
+  // Keyboard Controls
+  // -------------------------------
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.code !== "Space") return;
+      e.preventDefault();
+
+      if (!isRunning && !inspectionActive) {
+        setIsReady(true);
+      }
+    }
+
+    function handleKeyUp(e: KeyboardEvent) {
+      if (e.code !== "Space") return;
+      e.preventDefault();
+
+      if (isReady && !isRunning) {
+        setIsReady(false);
+        setInspectionActive(true);
+        setInspectionStart(performance.now());
+        setInspectionTimeLeft(15);
+        return;
+      }
+
+      if (inspectionActive) {
+        setInspectionActive(false);
+        setInspectionStart(null);
+        setInspectionTimeLeft(15);
+
+        const now = performance.now();
+        setStartTime(now);
+        setTimeMs(0);
+        setIsRunning(true);
+        return;
+      }
+
+      if (isRunning) stopSolve();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [isRunning, isReady, inspectionActive, inspectionStart, inspectionPenalty]);
+
+  // -------------------------------
+  // Mobile Tap Controls
+  // -------------------------------
+  function handleTap() {
+    if (isRunning) {
+      stopSolve();
+      return;
+    }
+
+    if (inspectionActive) {
+      setInspectionActive(false);
+      setInspectionStart(null);
+      setInspectionTimeLeft(15);
+
+      const now = performance.now();
+      setStartTime(now);
+      setTimeMs(0);
+      setIsRunning(true);
+      return;
+    }
+
+    if (!isRunning && !inspectionActive) {
+      setInspectionActive(true);
+      setInspectionStart(performance.now());
+      setInspectionTimeLeft(15);
+    }
+  }
+
+  // -------------------------------
+  // Penalty + Delete Handlers
+  // -------------------------------
   function handleUpdatePenalty(id: string, penalty: SolvePenalty) {
     setSolves((prev) =>
       prev.map((s) => {
         if (s.id !== id) return s;
+
         let final = s.timeMs;
         if (penalty === "+2") final += 2000;
         if (penalty === "DNF") final = s.timeMs;
+
         return { ...s, penalty, finalTimeMs: final };
       })
     );
   }
 
+  function handleDeleteSolve(id: string) {
+    setSolves((prev) => prev.filter((s) => s.id !== id));
+  }
+
+  // -------------------------------
+  // JSX
+  // -------------------------------
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-start py-6 px-4">
       <div className="w-full max-w-2xl space-y-4">
@@ -283,17 +300,15 @@ export default function TimerPage() {
         <div className="mt-4 border border-gray-700 rounded-lg p-3">
           <ScrambleSettings value={settings} onChange={setSettings} />
         </div>
+
         <StatsPanel solves={solves} />
 
-        <SolveList solves={solves} onUpdatePenalty={handleUpdatePenalty} />
-
-        <SolveList solves={solves} onUpdatePenalty={handleUpdatePenalty} />
+        <SolveList
+          solves={solves}
+          onUpdatePenalty={handleUpdatePenalty}
+          onDeleteSolve={handleDeleteSolve}
+        />
       </div>
     </div>
   );
 }
-
-
-
-
-
