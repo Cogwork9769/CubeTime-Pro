@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import type { Solve, SolvePenalty } from "../utils/stats";
 import PuzzleSelector from "../components/timer/PuzzleSelector";
 import ScrambleDisplay from "../components/timer/ScrambleDisplay";
 import TimerDisplay from "../components/timer/TimerDisplay";
@@ -312,4 +312,5 @@ export default function TimerPage() {
     </div>
   );
 }
+
 
