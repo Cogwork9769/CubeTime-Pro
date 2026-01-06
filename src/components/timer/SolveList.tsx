@@ -1,4 +1,4 @@
-import type { Solve, SolvePenalty } from "./SolveListTypes"; // adjust if needed
+import type { Solve, SolvePenalty } from "../../types/solve";
 import { formatTime } from "../../utils/stats";
 
 type Props = {
@@ -47,3 +47,4 @@ export default function SolveList({
     </div>
   );
 }
+
