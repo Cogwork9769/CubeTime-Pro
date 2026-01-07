@@ -29,11 +29,6 @@ export default function TimerPage() {
   // Timer + solve state
   // -------------------------------
   const [solves, setSolves] = useState<Solve[]>(loadSolves);
-  const [timeMs, setTimeMs] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
-  const [scramble, setScramble] = useState("");
   const [settings, setSettings] = useState({ /* your settings */ });
 
   // -------------------------------
@@ -162,3 +157,4 @@ function regenerateScramble() {
 function handleTap() {
   // your existing logic
 }
+
