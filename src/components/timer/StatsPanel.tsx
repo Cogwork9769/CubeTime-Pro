@@ -1,5 +1,5 @@
+import type { Solve } from "../../types/solve";
 import { best, worst, average, ao5, ao12, stdev, formatTime } from "../../utils/stats";
-import type { Solve } from "../../utils/stats";
 
 type StatsPanelProps = {
   solves: Solve[];
