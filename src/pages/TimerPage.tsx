@@ -5,6 +5,7 @@ import ScrambleDisplay from "../components/timer/ScrambleDisplay";
 import TimerDisplay from "../components/timer/TimerDisplay";
 import InspectionTimer from "../components/timer/InspectionTimer";
 import ScrambleSettings from "../components/timer/ScrambleSettings";
+import SessionSelector from "../components/timer/SessionSelector";
 
 import { generateScramble } from "../components/timer/ScrambleGenerator";
 import type {
@@ -18,6 +19,9 @@ import StatsPanel from "../components/timer/StatsPanel";
 
 const STORAGE_SOLVES_KEY = "cubeTimer_solves";
 const STORAGE_SETTINGS_KEY = "cubeTimer_scrambleSettings";
+
+const [sessions, setSessions] = useState<Session[]>(loadSessions);
+const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
 <SessionSelector
   sessions={sessions}
@@ -375,6 +379,7 @@ const [sessions, setSessions] = useState<Session[]>(loadSessions);
 const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
 useEffect(() => saveSessions(sessions), [sessions]);
+
 
 
 
