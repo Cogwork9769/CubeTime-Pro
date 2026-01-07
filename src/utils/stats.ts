@@ -1,10 +1,6 @@
 // Use the same Solve type your TimerPage uses
-import type { Solve } from "../types/solve";
+import type { Solve, SolvePenalty } from "../types/solve";
 
-export type Solve = {
-  finalTimeMs: number;
-  penalty: "OK" | "+2" | "DNF";
-};
 
 // Convert a solve to a usable numeric time
 export function effectiveTime(solve: Solve): number | null {
@@ -13,16 +9,6 @@ export function effectiveTime(solve: Solve): number | null {
 }
 
 export type SolvePenalty = "OK" | "+2" | "DNF";
-
-export type Solve = {
-  id: string;
-  timeMs: number;
-  finalTimeMs: number;
-  penalty: SolvePenalty;
-  puzzle: string;
-  scramble: string;
-  timestamp: number;
-};
 
 
 // Filter out DNFs for stats that require valid times
