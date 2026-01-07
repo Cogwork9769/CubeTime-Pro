@@ -30,13 +30,10 @@ export default function TimerPage() {
   // -------------------------------
   const [timeMs, setTimeMs] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
 
   // -------------------------------
   // Scramble + settings
   // -------------------------------
-  const [scramble, setScramble] = useState("");
   const [settings, setSettings] = useState({
     length: 20,
     useDoubleMoves: true,
@@ -232,3 +229,4 @@ function regenerateScramble() {
   ).join(" ");
   return scramble;
 }
+
