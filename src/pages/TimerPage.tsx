@@ -12,6 +12,16 @@ import SolveList from "../components/timer/SolveList";
 import SessionSelector from "../components/timer/SessionSelector";
 
 // --------------------------------------
+// Timer States
+// --------------------------------------
+type TimerState =
+  | "IDLE"
+  | "READY"
+  | "INSPECTION"
+  | "RUNNING"
+  | "LOCKOUT";
+
+// --------------------------------------
 // Main Component
 // --------------------------------------
 export default function TimerPage() {
@@ -29,14 +39,11 @@ export default function TimerPage() {
   // -------------------------------
   // Timer + inspection state
   // -------------------------------
+  const [state, setState] = useState<TimerState>("IDLE");
   const [timeMs, setTimeMs] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-
-  // inspection starts only after first press→release
   const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
-  const [inspectionActive, setInspectionActive] = useState(false);
-  const [inspectionPenalty, setInspectionPenalty] = useState<"OK" | "+2" | "DNF">("OK");
+  const [inspectionPenalty, setInspectionPenalty] =
+    useState<"OK" | "+2" | "DNF">("OK");
 
   // -------------------------------
   // Scramble + settings
@@ -57,80 +64,22 @@ export default function TimerPage() {
 
   // --- Inspection countdown ---
   useEffect(() => {
-    if (!inspectionActive) return;
+    if (state !== "INSPECTION") return;
 
     const id = setTimeout(() => {
       setInspectionTimeLeft((t) => t - 1);
     }, 1000);
 
     return () => clearTimeout(id);
-  }, [inspectionTimeLeft, inspectionActive]);
+  }, [inspectionTimeLeft, state]);
 
-  // --- WCA inspection penalties ---
+  // --- WCA penalties ---
   useEffect(() => {
-    if (!inspectionActive) return;
+    if (state !== "INSPECTION") return;
 
-    if (inspectionTimeLeft === 0) {
-      setInspectionPenalty("+2");
-    }
-
-    if (inspectionTimeLeft === -2) {
-      setInspectionPenalty("DNF");
-    }
-  }, [inspectionTimeLeft, inspectionActive]);
-
-  // --- Spacebar behavior ---
-  useEffect(() => {
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.code !== "Space") return;
-    e.preventDefault();
-
-    // If timer is running → stop timer
-    if (isRunning) {
-      stopTimer();
-      return;
-    }
-
-    // Not running → show READY
-    setIsReady(true);
-  }
-
-  function handleKeyUp(e: KeyboardEvent) {
-    if (e.code !== "Space") return;
-    e.preventDefault();
-
-    // If timer is running → ignore
-    if (isRunning) return;
-
-    // Clear READY
-    setIsReady(false);
-
-    // Case 1: start inspection (first press→release)
-    if (!inspectionActive) {
-      // always reset inspection state when starting a new inspection
-      setInspectionTimeLeft(15);
-      setInspectionPenalty("OK");
-      setInspectionActive(true);
-      return;
-    }
-
-    // Case 2: inspection is running → start real timer
-    if (inspectionActive) {
-      setInspectionActive(false);
-      startTimer();
-      return;
-    }
-  }
-
-  window.addEventListener("keydown", handleKeyDown);
-  window.addEventListener("keyup", handleKeyUp);
-
-  return () => {
-    window.removeEventListener("keydown", handleKeyDown);
-    window.removeEventListener("keyup", handleKeyUp);
-  };
-}, [isRunning, inspectionActive]);
-
+    if (inspectionTimeLeft === 0) setInspectionPenalty("+2");
+    if (inspectionTimeLeft === -2) setInspectionPenalty("DNF");
+  }, [inspectionTimeLeft, state]);
 
   // -------------------------------
   // Timer logic
@@ -138,7 +87,7 @@ export default function TimerPage() {
   const timerRef = useRef<number | null>(null);
 
   function startTimer() {
-    setIsRunning(true);
+    setState("RUNNING");
 
     const start = performance.now();
 
@@ -150,18 +99,15 @@ export default function TimerPage() {
 
   function stopTimer() {
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
-    setIsRunning(false);
 
-    const finalTime = timeMs;
-    let final = finalTime;
+    const raw = timeMs;
+    let final = raw;
 
-    if (inspectionPenalty === "+2") {
-      final += 2000;
-    }
+    if (inspectionPenalty === "+2") final += 2000;
 
     const solve: Solve = {
       id: crypto.randomUUID(),
-      timeMs: finalTime,
+      timeMs: raw,
       finalTimeMs: final,
       penalty: inspectionPenalty,
       puzzle: "3x3",
@@ -172,7 +118,7 @@ export default function TimerPage() {
     // Save solve
     setSolves((prev) => [...prev, solve]);
 
-    // Attach to active session
+    // Attach to session
     if (activeSessionId) {
       setSessions((prev) =>
         prev.map((s) =>
@@ -183,55 +129,94 @@ export default function TimerPage() {
       );
     }
 
-    // Reset for next solve
-    setInspectionActive(false);
+    // Reset
+    setState("LOCKOUT");
+    setTimeMs(0);
     setInspectionTimeLeft(15);
     setInspectionPenalty("OK");
-    setTimeMs(0);
     setScramble(regenerateScramble());
+
+    // Prevent accidental re-trigger
+    setTimeout(() => setState("IDLE"), 150);
   }
 
+  // -------------------------------
+  // Key handling
+  // -------------------------------
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.code !== "Space") return;
+      e.preventDefault();
+
+      if (state === "RUNNING") {
+        stopTimer();
+        return;
+      }
+
+      if (state === "IDLE" || state === "INSPECTION") {
+        setState("READY");
+      }
+    }
+
+    function handleKeyUp(e: KeyboardEvent) {
+      if (e.code !== "Space") return;
+      e.preventDefault();
+
+      if (state === "LOCKOUT") return;
+
+      if (state === "READY") {
+        // READY → INSPECTION
+        if (inspectionTimeLeft === 15 && state !== "INSPECTION") {
+          setState("INSPECTION");
+          return;
+        }
+
+        // READY → RUNNING (skip inspection)
+        if (state === "READY" && inspectionTimeLeft < 15) {
+          setState("IDLE");
+          startTimer();
+          return;
+        }
+      }
+
+      if (state === "INSPECTION") {
+        // Release during inspection → start timer
+        setState("IDLE");
+        startTimer();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [state, inspectionTimeLeft]);
+
+  // -------------------------------
+  // Tap handling (mobile)
+  // -------------------------------
   function handleTap() {
-  if (!isRunning) {
-    if (!inspectionActive) {
-      setInspectionTimeLeft(15);
-      setInspectionPenalty("OK");
-      setInspectionActive(true);
-    } else {
-      setInspectionActive(false);
+    if (state === "RUNNING") {
+      stopTimer();
+      return;
+    }
+
+    if (state === "IDLE") {
+      setState("INSPECTION");
+      return;
+    }
+
+    if (state === "INSPECTION") {
       startTimer();
-    }
-  } else {
-    stopTimer();
-  }
-}
-
-
-  // -------------------------------
-  // Solve handlers
-  // -------------------------------
-  function handleUpdatePenalty(id: string, penalty: SolvePenalty) {
-    setSolves((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, penalty } : s))
-    );
-  }
-
-  function handleDeleteSolve(id: string) {
-    setSolves((prev) => prev.filter((s) => s.id !== id));
-
-    if (activeSessionId) {
-      setSessions((prev) =>
-        prev.map((sess) =>
-          sess.id === activeSessionId
-            ? { ...sess, solves: sess.solves.filter((sid) => sid !== id) }
-            : sess
-        )
-      );
+      return;
     }
   }
 
   // -------------------------------
-  // Derived: solves for active session
+  // Derived solves
   // -------------------------------
   const activeSolves =
     activeSessionId &&
@@ -273,7 +258,12 @@ export default function TimerPage() {
       />
 
       <div onClick={handleTap} className="cursor-pointer select-none">
-        <TimerDisplay timeMs={timeMs} isRunning={isRunning} isReady={isReady} />
+        <TimerDisplay
+          timeMs={timeMs}
+          isRunning={state === "RUNNING"}
+          isReady={state === "READY"}
+          readyColor="blue"
+        />
         <InspectionTimer timeLeft={inspectionTimeLeft} />
       </div>
 
@@ -285,15 +275,33 @@ export default function TimerPage() {
 
       <SolveList
         solves={activeSolves}
-        onUpdatePenalty={handleUpdatePenalty}
-        onDeleteSolve={handleDeleteSolve}
+        onUpdatePenalty={(id, p) =>
+          setSolves((prev) =>
+            prev.map((s) => (s.id === id ? { ...s, penalty: p } : s))
+          )
+        }
+        onDeleteSolve={(id) => {
+          setSolves((prev) => prev.filter((s) => s.id !== id));
+          if (activeSessionId) {
+            setSessions((prev) =>
+              prev.map((sess) =>
+                sess.id === activeSessionId
+                  ? {
+                      ...sess,
+                      solves: sess.solves.filter((sid) => sid !== id),
+                    }
+                  : sess
+              )
+            );
+          }
+        }}
       />
     </div>
   );
 }
 
 // --------------------------------------
-// Helper functions (outside component)
+// Helpers
 // --------------------------------------
 const STORAGE_SESSIONS_KEY = "cubeTimer_sessions";
 const STORAGE_SOLVES_KEY = "cubeTimer_solves";
@@ -334,4 +342,3 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
-
