@@ -31,7 +31,7 @@ export default function TimerPage() {
   // -------------------------------
   const [timeMs, setTimeMs] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  const [isReady] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
   const [isHoldingSpace, setIsHoldingSpace] = useState(false);
   const [inspectionActive, setInspectionActive] = useState(true);
@@ -310,6 +310,7 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
 
 
 
