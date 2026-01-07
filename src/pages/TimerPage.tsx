@@ -312,6 +312,29 @@ export default function TimerPage() {
   );
 }
 
+const STORAGE_SESSIONS_KEY = "cubeTimer_sessions";
+
+function loadSessions(): Session[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_SESSIONS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function saveSessions(sessions: Session[]) {
+  try {
+    localStorage.setItem(STORAGE_SESSIONS_KEY, JSON.stringify(sessions));
+  } catch {}
+}
+
+const [sessions, setSessions] = useState<Session[]>(loadSessions);
+const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+useEffect(() => saveSessions(sessions), [sessions]);
+
 
 
 
