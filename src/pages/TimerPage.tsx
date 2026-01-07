@@ -1,7 +1,4 @@
-// --------------------------------------
-// Imports
-// --------------------------------------
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Solve, SolvePenalty } from "../types/solve";
 import type { Session } from "../types/session";
 
@@ -13,23 +10,39 @@ import StatsPanel from "../components/timer/StatsPanel";
 import SolveList from "../components/timer/SolveList";
 import SessionSelector from "../components/timer/SessionSelector";
 
-
 // --------------------------------------
-// Component
+// Main Component
 // --------------------------------------
 export default function TimerPage() {
-
   // -------------------------------
-  // Session state (MUST be first)
+  // Session state
   // -------------------------------
   const [sessions, setSessions] = useState<Session[]>(loadSessions);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   // -------------------------------
-  // Timer + solve state
+  // Solve state
   // -------------------------------
   const [solves, setSolves] = useState<Solve[]>(loadSolves);
-  const [settings, setSettings] = useState({ /* your settings */ });
+
+  // -------------------------------
+  // Timer state
+  // -------------------------------
+  const [timeMs, setTimeMs] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
+
+  // -------------------------------
+  // Scramble + settings
+  // -------------------------------
+  const [scramble, setScramble] = useState("");
+  const [settings, setSettings] = useState({
+    length: 20,
+    useDoubleMoves: true,
+    usePrimeMoves: true,
+    excludedMoves: [],
+  });
 
   // -------------------------------
   // Effects
@@ -38,23 +51,77 @@ export default function TimerPage() {
   useEffect(() => saveSolves(solves), [solves]);
 
   // -------------------------------
-  // Handlers
+  // Timer logic
+  // -------------------------------
+  const timerRef = useRef<number | null>(null);
+
+  function startTimer() {
+    setIsRunning(true);
+    const start = performance.now() - timeMs;
+
+    timerRef.current = requestAnimationFrame(function tick(now) {
+      setTimeMs(now - start);
+      timerRef.current = requestAnimationFrame(tick);
+    });
+  }
+
+  function stopTimer() {
+    if (timerRef.current) cancelAnimationFrame(timerRef.current);
+    setIsRunning(false);
+
+    const finalTime = timeMs;
+
+    const solve: Solve = {
+      id: crypto.randomUUID(),
+      timeMs: finalTime,
+      finalTimeMs: finalTime,
+      penalty: "OK",
+      puzzle: "3x3",
+      scramble,
+      timestamp: Date.now(),
+    };
+
+    setSolves((prev) => [...prev, solve]);
+
+    if (activeSessionId) {
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === activeSessionId
+            ? { ...s, solves: [...s.solves, solve.id] }
+            : s
+        )
+      );
+    }
+
+    setTimeMs(0);
+    regenerateScramble();
+  }
+
+  function handleTap() {
+    if (!isRunning) {
+      startTimer();
+    } else {
+      stopTimer();
+    }
+  }
+
+  // -------------------------------
+  // Solve handlers
   // -------------------------------
   function handleUpdatePenalty(id: string, penalty: SolvePenalty) {
-    setSolves(prev =>
-      prev.map(s => s.id === id ? { ...s, penalty } : s)
+    setSolves((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, penalty } : s))
     );
   }
 
   function handleDeleteSolve(id: string) {
-    setSolves(prev => prev.filter(s => s.id !== id));
+    setSolves((prev) => prev.filter((s) => s.id !== id));
 
-    // also remove from session
     if (activeSessionId) {
-      setSessions(prev =>
-        prev.map(sess =>
+      setSessions((prev) =>
+        prev.map((sess) =>
           sess.id === activeSessionId
-            ? { ...sess, solves: sess.solves.filter(sid => sid !== id) }
+            ? { ...sess, solves: sess.solves.filter((sid) => sid !== id) }
             : sess
         )
       );
@@ -62,21 +129,23 @@ export default function TimerPage() {
   }
 
   // -------------------------------
-  // Derived values
+  // Derived: solves for active session
   // -------------------------------
-  const activeSolves = activeSessionId
-    ? solves.filter(s =>
-        sessions
-          .find(sess => sess.id === activeSessionId)
-          ?.solves.includes(s.id)
-      )
-    : [];
+  const activeSolves =
+    activeSessionId &&
+    sessions.find((s) => s.id === activeSessionId)?.solves.length
+      ? solves.filter((s) =>
+          sessions
+            .find((sess) => sess.id === activeSessionId)
+            ?.solves.includes(s.id)
+        )
+      : [];
 
   // -------------------------------
   // JSX
   // -------------------------------
   return (
-    <div className="min-h-screen bg-black text-white p-4">
+    <div className="min-h-screen bg-black text-white p-4 flex flex-col gap-4">
 
       <SessionSelector
         sessions={sessions}
@@ -89,10 +158,10 @@ export default function TimerPage() {
           const newSession: Session = {
             id: crypto.randomUUID(),
             name,
-            solves: []
+            solves: [],
           };
 
-          setSessions(prev => [...prev, newSession]);
+          setSessions((prev) => [...prev, newSession]);
           setActiveSessionId(newSession.id);
         }}
       />
@@ -104,7 +173,7 @@ export default function TimerPage() {
         <InspectionTimer timeLeft={inspectionTimeLeft} />
       </div>
 
-      <div className="mt-4 border border-gray-700 rounded-lg p-3">
+      <div className="border border-gray-700 rounded-lg p-3">
         <ScrambleSettings value={settings} onChange={setSettings} />
       </div>
 
@@ -115,22 +184,20 @@ export default function TimerPage() {
         onUpdatePenalty={handleUpdatePenalty}
         onDeleteSolve={handleDeleteSolve}
       />
-
     </div>
   );
 }
 
-
 // --------------------------------------
-// Helper functions (OUTSIDE component)
+// Helper functions (outside component)
 // --------------------------------------
 const STORAGE_SESSIONS_KEY = "cubeTimer_sessions";
+const STORAGE_SOLVES_KEY = "cubeTimer_solves";
 
 function loadSessions(): Session[] {
   try {
     const raw = localStorage.getItem(STORAGE_SESSIONS_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
+    return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
@@ -143,18 +210,25 @@ function saveSessions(sessions: Session[]) {
 }
 
 function loadSolves(): Solve[] {
-  // your existing logic
+  try {
+    const raw = localStorage.getItem(STORAGE_SOLVES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
 }
 
 function saveSolves(solves: Solve[]) {
-  // your existing logic
+  try {
+    localStorage.setItem(STORAGE_SOLVES_KEY, JSON.stringify(solves));
+  } catch {}
 }
 
 function regenerateScramble() {
-  // your existing logic
+  // Replace with your scramble generator
+  const moves = ["R", "L", "U", "D", "F", "B"];
+  const scramble = Array.from({ length: 20 }, () =>
+    moves[Math.floor(Math.random() * moves.length)]
+  ).join(" ");
+  return scramble;
 }
-
-function handleTap() {
-  // your existing logic
-}
-
