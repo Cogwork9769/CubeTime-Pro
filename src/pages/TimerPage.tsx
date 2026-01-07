@@ -302,6 +302,17 @@ export default function TimerPage() {
   }
 
   // -------------------------------
+// Filter solves for active session
+// -------------------------------
+const activeSolves = activeSessionId
+  ? solves.filter((s) =>
+      sessions
+        .find((sess) => sess.id === activeSessionId)
+        ?.solves.includes(s.id)
+    )
+  : [];
+
+  // -------------------------------
   // JSX
   // -------------------------------
   return (
@@ -314,6 +325,7 @@ export default function TimerPage() {
           </div>
         </div>
 
+        
         <ScrambleDisplay scramble={scramble} onRegenerate={regenerateScramble} />
 
         <div onClick={handleTap} className="cursor-pointer select-none">
@@ -363,6 +375,7 @@ const [sessions, setSessions] = useState<Session[]>(loadSessions);
 const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
 useEffect(() => saveSessions(sessions), [sessions]);
+
 
 
 
