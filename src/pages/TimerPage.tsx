@@ -164,8 +164,6 @@ setInspectionTimeLeft(15);
 setInspectionPenalty("OK");
 
 
-    };
-
     setSolves((prev) => [...prev, solve]);
 
     if (activeSessionId) {
@@ -312,6 +310,7 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
 
 
 
