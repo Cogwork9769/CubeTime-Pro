@@ -6,6 +6,7 @@ import TimerDisplay from "../components/timer/TimerDisplay";
 import InspectionTimer from "../components/timer/InspectionTimer";
 import ScrambleSettings from "../components/timer/ScrambleSettings";
 import SessionSelector from "../components/timer/SessionSelector";
+import type { Session } from "../types/session";
 
 import { generateScramble } from "../components/timer/ScrambleGenerator";
 import type {
@@ -345,12 +346,9 @@ const activeSolves = activeSessionId
           <ScrambleSettings value={settings} onChange={setSettings} />
         </div>
 
-        <StatsPanel solves={solves} />
+       <StatsPanel solves={activeSolves} />
+       <SolveList solves={activeSolves} />
 
-        <SolveList
-          solves={solves}
-          onUpdatePenalty={handleUpdatePenalty}
-          onDeleteSolve={handleDeleteSolve}
         />
       </div>
     </div>
@@ -375,10 +373,9 @@ function saveSessions(sessions: Session[]) {
   } catch {}
 }
 
-const [sessions, setSessions] = useState<Session[]>(loadSessions);
-const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
 useEffect(() => saveSessions(sessions), [sessions]);
+
 
 
 
