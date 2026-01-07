@@ -10,6 +10,18 @@ import StatsPanel from "../components/timer/StatsPanel";
 import SolveList from "../components/timer/SolveList";
 import SessionSelector from "../components/timer/SessionSelector";
 
+const [scramble, setScramble] = useState("");
+const [isReady, setIsReady] = useState(false);
+const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
+
+const [settings, setSettings] = useState<ScrambleSettingsType>({
+  length: 20,
+  useDoubleMoves: true,
+  usePrimeMoves: true,
+  excludedMoves: [],
+});
+
+
 // --------------------------------------
 // Main Component
 // --------------------------------------
@@ -229,4 +241,5 @@ function regenerateScramble() {
   ).join(" ");
   return scramble;
 }
+
 
