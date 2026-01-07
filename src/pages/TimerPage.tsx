@@ -27,13 +27,13 @@ export default function TimerPage() {
   const [solves, setSolves] = useState<Solve[]>(loadSolves);
 
   // -------------------------------
-  // Timer state
+  // Timer + inspection state
   // -------------------------------
   const [timeMs, setTimeMs] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
-  // Inspection: starts idle, only begins after first press→release
+  // inspection starts only after first press→release
   const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
   const [inspectionActive, setInspectionActive] = useState(false);
   const [inspectionPenalty, setInspectionPenalty] = useState<"OK" | "+2" | "DNF">("OK");
@@ -193,15 +193,12 @@ export default function TimerPage() {
   function handleTap() {
     if (!isRunning) {
       // Mirror keyboard behavior:
-      // If no inspection yet → start inspection
       if (!inspectionActive && inspectionTimeLeft === 15) {
         setInspectionActive(true);
       } else if (inspectionActive) {
-        // If inspection running → start timer
         setInspectionActive(false);
         startTimer();
       } else {
-        // Otherwise just start timer
         startTimer();
       }
     } else {
