@@ -19,6 +19,26 @@ import StatsPanel from "../components/timer/StatsPanel";
 const STORAGE_SOLVES_KEY = "cubeTimer_solves";
 const STORAGE_SETTINGS_KEY = "cubeTimer_scrambleSettings";
 
+<SessionSelector
+  sessions={sessions}
+  activeId={activeSessionId}
+  onSelect={setActiveSessionId}
+  onCreate={() => {
+    const name = prompt("Session name?");
+    if (!name) return;
+
+    const newSession: Session = {
+      id: crypto.randomUUID(),
+      name,
+      solves: [],
+    };
+
+    setSessions((prev) => [...prev, newSession]);
+    setActiveSessionId(newSession.id);
+  }}
+/>
+
+
 // -------------------------------
 // Load + Save Helpers
 // -------------------------------
@@ -334,6 +354,7 @@ const [sessions, setSessions] = useState<Session[]>(loadSessions);
 const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
 useEffect(() => saveSessions(sessions), [sessions]);
+
 
 
 
