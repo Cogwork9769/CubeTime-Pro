@@ -163,6 +163,15 @@ export default function TimerPage() {
   // Stop Solve (bulletproof)
   // -------------------------------
   function stopSolve() {
+    if (activeSessionId) {
+  setSessions((prev) =>
+    prev.map((s) =>
+      s.id === activeSessionId
+        ? { ...s, solves: [...s.solves, solve.id] }
+        : s
+    )
+  );
+}
     if (!isRunning || startTime === null) return;
     if (solveLocked) return;
 
@@ -354,6 +363,7 @@ const [sessions, setSessions] = useState<Session[]>(loadSessions);
 const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
 useEffect(() => saveSessions(sessions), [sessions]);
+
 
 
 
