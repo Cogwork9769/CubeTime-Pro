@@ -155,29 +155,6 @@ useEffect(() => {
 
   if (inspectionPenalty === "+2") final += 2000;
 
-  const solve: Solve = {
-    id: crypto.randomUUID(),
-    timeMs: finalTime,
-    finalTimeMs: final,
-    penalty: inspectionPenalty,
-    puzzle: "3x3",
-    scramble,
-    timestamp: Date.now(),
-  };
-
-  // Save solve
-  setSolves((prev) => [...prev, solve]);
-
-  // Save to session
-  if (activeSessionId) {
-    setSessions((prev) =>
-      prev.map((s) =>
-        s.id === activeSessionId
-          ? { ...s, solves: [...s.solves, solve.id] }
-          : s
-      )
-    );
-  }
 
   // Reset for next solve
   setInspectionActive(true);
@@ -349,6 +326,7 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
 
 
 
