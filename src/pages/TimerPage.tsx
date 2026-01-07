@@ -32,12 +32,15 @@ export default function TimerPage() {
   const [timeMs, setTimeMs] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [isReady] = useState(false);
-  const [inspectionTimeLeft] = useState(15);
+  const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
+  const [isHoldingSpace, setIsHoldingSpace] = useState(false);
+  const [inspectionActive, setInspectionActive] = useState(true);
+  const [inspectionPenalty, setInspectionPenalty] = useState<"OK" | "+2" | "DNF">("OK");
 
   // -------------------------------
   // Scramble + settings
   // -------------------------------
-  const [scramble, setScramble] = useState("");
+  const [scramble, setScramble] = useState(regenerateScramble());
   const [settings, setSettings] = useState<ScrambleSettingsType>({
     length: 20,
     useDoubleMoves: true,
@@ -51,32 +54,88 @@ export default function TimerPage() {
 useEffect(() => saveSessions(sessions), [sessions]);
 useEffect(() => saveSolves(solves), [solves]);
 
+// --- Inspection countdown ---
 useEffect(() => {
-  function handleKey(e: KeyboardEvent) {
+  if (!inspectionActive) return;
+
+  const id = setTimeout(() => {
+    setInspectionTimeLeft((t) => t - 1);
+  }, 1000);
+
+  return () => clearTimeout(id);
+}, [inspectionTimeLeft, inspectionActive]);
+
+  // --- WCA inspection penalties ---
+useEffect(() => {
+  if (!inspectionActive) return;
+
+  if (inspectionTimeLeft === 0) {
+    setInspectionPenalty("+2");
+  }
+
+  if (inspectionTimeLeft === -2) {
+    setInspectionPenalty("DNF");
+  }
+}, [inspectionTimeLeft, inspectionActive]);
+
+
+useEffect(() => {
+  function handleKeyDown(e: KeyboardEvent) {
     if (e.code === "Space") {
       e.preventDefault();
-      handleTap();
+
+      // If timer is running → stop
+      if (isRunning) {
+        stopTimer();
+        return;
+      }
+
+      // If timer is not running → user is holding space
+      if (!isHoldingSpace) {
+        setIsHoldingSpace(true);
+        setIsReady(true); // show READY state
+      }
     }
   }
 
-  window.addEventListener("keydown", handleKey);
-  return () => window.removeEventListener("keydown", handleKey);
-}, [isRunning, timeMs]);
+  function handleKeyUp(e: KeyboardEvent) {
+    if (e.code === "Space") {
+      e.preventDefault();
 
+      // If user was holding space and timer is not running → start
+      if (isHoldingSpace && !isRunning) {
+        setIsHoldingSpace(false);
+        setIsReady(false);
+        startTimer();
+      }
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+  window.addEventListener("keyup", handleKeyUp);
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("keyup", handleKeyUp);
+  };
+}, [isRunning, isHoldingSpace]);
   // -------------------------------
   // Timer logic
   // -------------------------------
   const timerRef = useRef<number | null>(null);
 
   function startTimer() {
-    setIsRunning(true);
-    const start = performance.now() - timeMs;
+  setInspectionActive(false); // stop inspection
+  setIsRunning(true);
+  setIsReady(false);
 
-    timerRef.current = requestAnimationFrame(function tick(now) {
-      setTimeMs(now - start);
-      timerRef.current = requestAnimationFrame(tick);
-    });
-  }
+  const start = performance.now();
+
+  timerRef.current = requestAnimationFrame(function tick(now) {
+    setTimeMs(now - start);
+    timerRef.current = requestAnimationFrame(tick);
+  });
+}
 
   function stopTimer() {
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
@@ -84,14 +143,27 @@ useEffect(() => {
 
     const finalTime = timeMs;
 
-    const solve: Solve = {
-      id: crypto.randomUUID(),
-      timeMs: finalTime,
-      finalTimeMs: finalTime,
-      penalty: "OK",
-      puzzle: "3x3",
-      scramble,
-      timestamp: Date.now(),
+    let final = finalTime;
+
+if (inspectionPenalty === "+2") {
+  final += 2000;
+}
+
+const solve: Solve = {
+  id: crypto.randomUUID(),
+  timeMs: finalTime,
+  finalTimeMs: final,
+  penalty: inspectionPenalty,
+  puzzle: "3x3",
+  scramble,
+  timestamp: Date.now(),
+};
+
+    setInspectionActive(true);
+setInspectionTimeLeft(15);
+setInspectionPenalty("OK");
+
+
     };
 
     setSolves((prev) => [...prev, solve]);
@@ -240,6 +312,7 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
 
 
 
