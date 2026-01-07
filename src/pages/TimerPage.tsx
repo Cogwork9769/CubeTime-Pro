@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import type { Solve, SolvePenalty } from "../types/solve";
+import type { Solve } from "../types/solve";
 import type { Session } from "../types/session";
 import type { ScrambleSettingsType } from "../types/scramble";
 
@@ -166,7 +166,7 @@ export default function TimerPage() {
 
       if (state === "READY") {
         // READY → INSPECTION
-        if (inspectionTimeLeft === 15 && state !== "INSPECTION") {
+       if (inspectionTimeLeft === 15) {
           setState("INSPECTION");
           return;
         }
@@ -258,12 +258,12 @@ export default function TimerPage() {
       />
 
       <div onClick={handleTap} className="cursor-pointer select-none">
-        <TimerDisplay
-          timeMs={timeMs}
-          isRunning={state === "RUNNING"}
-          isReady={state === "READY"}
-          readyColor="blue"
-        />
+       <TimerDisplay
+  timeMs={timeMs}
+  isRunning={state === "RUNNING"}
+  isReady={state === "READY"}
+/>
+
         <InspectionTimer timeLeft={inspectionTimeLeft} />
       </div>
 
@@ -342,3 +342,4 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
