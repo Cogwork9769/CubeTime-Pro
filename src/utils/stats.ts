@@ -1,6 +1,5 @@
 // Use the same Solve type your TimerPage uses
-import type { Solve, SolvePenalty } from "../types/solve";
-
+import type { Solve } from "../types/solve";
 
 // Convert a solve to a usable numeric time
 export function effectiveTime(solve: Solve): number | null {
