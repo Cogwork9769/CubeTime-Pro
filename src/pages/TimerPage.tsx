@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { Solve, SolvePenalty } from "../types/solve";
 import type { Session } from "../types/session";
+import type { ScrambleSettingsType } from "../types/scramble";
 
 import ScrambleDisplay from "../components/timer/ScrambleDisplay";
 import TimerDisplay from "../components/timer/TimerDisplay";
@@ -9,18 +10,6 @@ import ScrambleSettings from "../components/timer/ScrambleSettings";
 import StatsPanel from "../components/timer/StatsPanel";
 import SolveList from "../components/timer/SolveList";
 import SessionSelector from "../components/timer/SessionSelector";
-
-const [scramble, setScramble] = useState("");
-const [isReady, setIsReady] = useState(false);
-const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
-
-const [settings, setSettings] = useState<ScrambleSettingsType>({
-  length: 20,
-  useDoubleMoves: true,
-  usePrimeMoves: true,
-  excludedMoves: [],
-});
-
 
 // --------------------------------------
 // Main Component
@@ -42,11 +31,14 @@ export default function TimerPage() {
   // -------------------------------
   const [timeMs, setTimeMs] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const [isReady] = useState(false);
+  const [inspectionTimeLeft] = useState(15);
 
   // -------------------------------
   // Scramble + settings
   // -------------------------------
-  const [settings, setSettings] = useState({
+  const [scramble, setScramble] = useState("");
+  const [settings, setSettings] = useState<ScrambleSettingsType>({
     length: 20,
     useDoubleMoves: true,
     usePrimeMoves: true,
@@ -103,15 +95,12 @@ export default function TimerPage() {
     }
 
     setTimeMs(0);
-    regenerateScramble();
+    setScramble(regenerateScramble());
   }
 
   function handleTap() {
-    if (!isRunning) {
-      startTimer();
-    } else {
-      stopTimer();
-    }
+    if (!isRunning) startTimer();
+    else stopTimer();
   }
 
   // -------------------------------
@@ -175,7 +164,7 @@ export default function TimerPage() {
         }}
       />
 
-      <ScrambleDisplay scramble={scramble} onRegenerate={regenerateScramble} />
+      <ScrambleDisplay scramble={scramble} onRegenerate={() => setScramble(regenerateScramble())} />
 
       <div onClick={handleTap} className="cursor-pointer select-none">
         <TimerDisplay timeMs={timeMs} isRunning={isRunning} isReady={isReady} />
@@ -234,12 +223,8 @@ function saveSolves(solves: Solve[]) {
 }
 
 function regenerateScramble() {
-  // Replace with your scramble generator
   const moves = ["R", "L", "U", "D", "F", "B"];
-  const scramble = Array.from({ length: 20 }, () =>
+  return Array.from({ length: 20 }, () =>
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
-  return scramble;
 }
-
-
