@@ -81,55 +81,56 @@ export default function TimerPage() {
 
   // --- Spacebar behavior ---
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.code !== "Space") return;
-      e.preventDefault();
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.code !== "Space") return;
+    e.preventDefault();
 
-      // If timer is running → stop timer
-      if (isRunning) {
-        stopTimer();
-        return;
-      }
-
-      // Not running → show READY
-      setIsReady(true);
+    // If timer is running → stop timer
+    if (isRunning) {
+      stopTimer();
+      return;
     }
 
-    function handleKeyUp(e: KeyboardEvent) {
-      if (e.code !== "Space") return;
-      e.preventDefault();
+    // Not running → show READY
+    setIsReady(true);
+  }
 
-      // If timer is running → ignore
-      if (isRunning) return;
+  function handleKeyUp(e: KeyboardEvent) {
+    if (e.code !== "Space") return;
+    e.preventDefault();
 
-      // Clear READY
-      setIsReady(false);
+    // If timer is running → ignore
+    if (isRunning) return;
 
-      // Case 1: first press→release → start inspection
-      if (!inspectionActive && inspectionTimeLeft === 15) {
-        setInspectionActive(true);
-        return;
-      }
+    // Clear READY
+    setIsReady(false);
 
-      // Case 2: inspection is running → start real timer
-      if (inspectionActive) {
-        setInspectionActive(false);
-        startTimer();
-        return;
-      }
+    // Case 1: start inspection (first press→release)
+    if (!inspectionActive) {
+      // always reset inspection state when starting a new inspection
+      setInspectionTimeLeft(15);
+      setInspectionPenalty("OK");
+      setInspectionActive(true);
+      return;
+    }
 
-      // Fallback: if somehow neither, just start timer
+    // Case 2: inspection is running → start real timer
+    if (inspectionActive) {
+      setInspectionActive(false);
       startTimer();
+      return;
     }
+  }
 
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+  window.addEventListener("keydown", handleKeyDown);
+  window.addEventListener("keyup", handleKeyUp);
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [isRunning, inspectionActive, inspectionTimeLeft]);
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("keyup", handleKeyUp);
+  };
+}, [isRunning, inspectionActive]);
+
 
   // -------------------------------
   // Timer logic
@@ -191,20 +192,20 @@ export default function TimerPage() {
   }
 
   function handleTap() {
-    if (!isRunning) {
-      // Mirror keyboard behavior:
-      if (!inspectionActive && inspectionTimeLeft === 15) {
-        setInspectionActive(true);
-      } else if (inspectionActive) {
-        setInspectionActive(false);
-        startTimer();
-      } else {
-        startTimer();
-      }
+  if (!isRunning) {
+    if (!inspectionActive) {
+      setInspectionTimeLeft(15);
+      setInspectionPenalty("OK");
+      setInspectionActive(true);
     } else {
-      stopTimer();
+      setInspectionActive(false);
+      startTimer();
     }
+  } else {
+    stopTimer();
   }
+}
+
 
   // -------------------------------
   // Solve handlers
@@ -333,3 +334,4 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
