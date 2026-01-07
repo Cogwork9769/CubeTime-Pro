@@ -52,6 +52,7 @@ export default function TimerPage() {
   useEffect(() => saveSolves(solves), [solves]);
 
   useEffect(() => {
+  useEffect(() => {
   function handleKey(e: KeyboardEvent) {
     if (e.code === "Space") {
       e.preventDefault();
@@ -240,4 +241,5 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
 
