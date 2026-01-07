@@ -282,7 +282,6 @@ setInspectionPenalty("OK");
       />
     </div>
   );
-}
 
 // --------------------------------------
 // Helper functions (outside component)
@@ -326,6 +325,7 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
 
 
 
