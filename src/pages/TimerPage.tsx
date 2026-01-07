@@ -13,7 +13,7 @@ import type {
 } from "../components/timer/ScrambleGenerator";
 
 import SolveList from "../components/timer/SolveList";
-import type { Solve, SolvePenalty } from "../utils/stats";
+import type { Solve, SolvePenalty } from "../types/solve";
 
 import StatsPanel from "../components/timer/StatsPanel";
 
@@ -312,6 +312,7 @@ export default function TimerPage() {
     </div>
   );
 }
+
 
 
 
