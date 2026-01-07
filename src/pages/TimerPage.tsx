@@ -51,6 +51,18 @@ export default function TimerPage() {
   useEffect(() => saveSessions(sessions), [sessions]);
   useEffect(() => saveSolves(solves), [solves]);
 
+  useEffect(() => {
+  function handleKey(e: KeyboardEvent) {
+    if (e.code === "Space") {
+      e.preventDefault();
+      handleTap();
+    }
+  }
+
+  window.addEventListener("keydown", handleKey);
+  return () => window.removeEventListener("keydown", handleKey);
+}, [isRunning, timeMs]);
+
   // -------------------------------
   // Timer logic
   // -------------------------------
@@ -228,3 +240,4 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
