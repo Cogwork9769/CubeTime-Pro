@@ -32,9 +32,10 @@ export default function TimerPage() {
   const [timeMs, setTimeMs] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [isReady, setIsReady] = useState(false);
+
+  // Inspection: starts idle, only begins after first press→release
   const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
-  const [isHoldingSpace, setIsHoldingSpace] = useState(false);
-  const [inspectionActive, setInspectionActive] = useState(true);
+  const [inspectionActive, setInspectionActive] = useState(false);
   const [inspectionPenalty, setInspectionPenalty] = useState<"OK" | "+2" | "DNF">("OK");
 
   // -------------------------------
@@ -51,82 +52,84 @@ export default function TimerPage() {
   // -------------------------------
   // Effects
   // -------------------------------
-useEffect(() => saveSessions(sessions), [sessions]);
-useEffect(() => saveSolves(solves), [solves]);
+  useEffect(() => saveSessions(sessions), [sessions]);
+  useEffect(() => saveSolves(solves), [solves]);
 
-// --- Inspection countdown ---
-useEffect(() => {
-  if (!inspectionActive) return;
+  // --- Inspection countdown ---
+  useEffect(() => {
+    if (!inspectionActive) return;
 
-  const id = setTimeout(() => {
-    setInspectionTimeLeft((t) => t - 1);
-  }, 1000);
+    const id = setTimeout(() => {
+      setInspectionTimeLeft((t) => t - 1);
+    }, 1000);
 
-  return () => clearTimeout(id);
-}, [inspectionTimeLeft, inspectionActive]);
+    return () => clearTimeout(id);
+  }, [inspectionTimeLeft, inspectionActive]);
 
   // --- WCA inspection penalties ---
-useEffect(() => {
-  if (!inspectionActive) return;
+  useEffect(() => {
+    if (!inspectionActive) return;
 
-  if (inspectionTimeLeft === 0) {
-    setInspectionPenalty("+2");
-  }
-
-  if (inspectionTimeLeft === -2) {
-    setInspectionPenalty("DNF");
-  }
-}, [inspectionTimeLeft, inspectionActive]);
-
-
-useEffect(() => {
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.code !== "Space") return;
-    e.preventDefault();
-
-    // If timer is running → stop timer
-    if (isRunning) {
-      stopTimer();
-      return;
+    if (inspectionTimeLeft === 0) {
+      setInspectionPenalty("+2");
     }
 
-    // If inspection is active → READY for starting timer
-    if (inspectionActive) {
+    if (inspectionTimeLeft === -2) {
+      setInspectionPenalty("DNF");
+    }
+  }, [inspectionTimeLeft, inspectionActive]);
+
+  // --- Spacebar behavior ---
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.code !== "Space") return;
+      e.preventDefault();
+
+      // If timer is running → stop timer
+      if (isRunning) {
+        stopTimer();
+        return;
+      }
+
+      // Not running → show READY
       setIsReady(true);
-      return;
     }
 
-    // If inspection is NOT active (normal solve) → READY
-    setIsReady(true);
-  }
+    function handleKeyUp(e: KeyboardEvent) {
+      if (e.code !== "Space") return;
+      e.preventDefault();
 
-  function handleKeyUp(e: KeyboardEvent) {
-    if (e.code !== "Space") return;
-    e.preventDefault();
+      // If timer is running → ignore
+      if (isRunning) return;
 
-    // If timer is running → ignore
-    if (isRunning) return;
-
-    // If inspection is active → start inspection countdown
-    if (inspectionActive) {
+      // Clear READY
       setIsReady(false);
-      // inspection already counts down via effect
-      return;
+
+      // Case 1: first press→release → start inspection
+      if (!inspectionActive && inspectionTimeLeft === 15) {
+        setInspectionActive(true);
+        return;
+      }
+
+      // Case 2: inspection is running → start real timer
+      if (inspectionActive) {
+        setInspectionActive(false);
+        startTimer();
+        return;
+      }
+
+      // Fallback: if somehow neither, just start timer
+      startTimer();
     }
 
-    // If inspection is finished → start the real timer
-    setIsReady(false);
-    startTimer();
-  }
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
 
-  window.addEventListener("keydown", handleKeyDown);
-  window.addEventListener("keyup", handleKeyUp);
-
-  return () => {
-    window.removeEventListener("keydown", handleKeyDown);
-    window.removeEventListener("keyup", handleKeyUp);
-  };
-}, [isRunning, inspectionActive]);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [isRunning, inspectionActive, inspectionTimeLeft]);
 
   // -------------------------------
   // Timer logic
@@ -134,54 +137,41 @@ useEffect(() => {
   const timerRef = useRef<number | null>(null);
 
   function startTimer() {
-  setInspectionActive(false); // stop inspection
-  setIsRunning(true);
-  setIsReady(false);
+    setIsRunning(true);
 
-  const start = performance.now();
+    const start = performance.now();
 
-  timerRef.current = requestAnimationFrame(function tick(now) {
-    setTimeMs(now - start);
-    timerRef.current = requestAnimationFrame(tick);
-  });
-}
+    timerRef.current = requestAnimationFrame(function tick(now) {
+      setTimeMs(now - start);
+      timerRef.current = requestAnimationFrame(tick);
+    });
+  }
 
- function stopTimer() {
-  if (timerRef.current) cancelAnimationFrame(timerRef.current);
-  setIsRunning(false);
+  function stopTimer() {
+    if (timerRef.current) cancelAnimationFrame(timerRef.current);
+    setIsRunning(false);
 
-  const finalTime = timeMs;
-  let final = finalTime;
+    const finalTime = timeMs;
+    let final = finalTime;
 
-  if (inspectionPenalty === "+2") final += 2000;
+    if (inspectionPenalty === "+2") {
+      final += 2000;
+    }
 
+    const solve: Solve = {
+      id: crypto.randomUUID(),
+      timeMs: finalTime,
+      finalTimeMs: final,
+      penalty: inspectionPenalty,
+      puzzle: "3x3",
+      scramble,
+      timestamp: Date.now(),
+    };
 
-  // Reset for next solve
-  setInspectionActive(true);
-  setInspectionTimeLeft(15);
-  setInspectionPenalty("OK");
-  setTimeMs(0);
-  setScramble(regenerateScramble());
-}
-
-
-const solve: Solve = {
-  id: crypto.randomUUID(),
-  timeMs: finalTime,
-  finalTimeMs: final,
-  penalty: inspectionPenalty,
-  puzzle: "3x3",
-  scramble,
-  timestamp: Date.now(),
-};
-
-    setInspectionActive(true);
-setInspectionTimeLeft(15);
-setInspectionPenalty("OK");
-
-
+    // Save solve
     setSolves((prev) => [...prev, solve]);
 
+    // Attach to active session
     if (activeSessionId) {
       setSessions((prev) =>
         prev.map((s) =>
@@ -192,13 +182,31 @@ setInspectionPenalty("OK");
       );
     }
 
+    // Reset for next solve
+    setInspectionActive(false);
+    setInspectionTimeLeft(15);
+    setInspectionPenalty("OK");
     setTimeMs(0);
     setScramble(regenerateScramble());
   }
 
   function handleTap() {
-    if (!isRunning) startTimer();
-    else stopTimer();
+    if (!isRunning) {
+      // Mirror keyboard behavior:
+      // If no inspection yet → start inspection
+      if (!inspectionActive && inspectionTimeLeft === 15) {
+        setInspectionActive(true);
+      } else if (inspectionActive) {
+        // If inspection running → start timer
+        setInspectionActive(false);
+        startTimer();
+      } else {
+        // Otherwise just start timer
+        startTimer();
+      }
+    } else {
+      stopTimer();
+    }
   }
 
   // -------------------------------
@@ -242,7 +250,6 @@ setInspectionPenalty("OK");
   // -------------------------------
   return (
     <div className="min-h-screen bg-black text-white p-4 flex flex-col gap-4">
-
       <SessionSelector
         sessions={sessions}
         activeId={activeSessionId}
@@ -262,7 +269,10 @@ setInspectionPenalty("OK");
         }}
       />
 
-      <ScrambleDisplay scramble={scramble} onRegenerate={() => setScramble(regenerateScramble())} />
+      <ScrambleDisplay
+        scramble={scramble}
+        onRegenerate={() => setScramble(regenerateScramble())}
+      />
 
       <div onClick={handleTap} className="cursor-pointer select-none">
         <TimerDisplay timeMs={timeMs} isRunning={isRunning} isReady={isReady} />
@@ -282,6 +292,7 @@ setInspectionPenalty("OK");
       />
     </div>
   );
+}
 
 // --------------------------------------
 // Helper functions (outside component)
@@ -325,12 +336,3 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
-
-
-
-
-
-
-
-
-
