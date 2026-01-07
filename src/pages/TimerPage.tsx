@@ -347,7 +347,12 @@ const activeSolves = activeSessionId
         </div>
 
        <StatsPanel solves={activeSolves} />
-       <SolveList solves={activeSolves} />
+       <SolveList
+  solves={activeSolves}
+  onUpdatePenalty={handleUpdatePenalty}
+  onDeleteSolve={handleDeleteSolve}
+/>
+
 
       </div>
     </div>
@@ -374,6 +379,7 @@ function saveSessions(sessions: Session[]) {
 
 
 useEffect(() => saveSessions(sessions), [sessions]);
+
 
 
 
