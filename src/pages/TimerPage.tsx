@@ -81,34 +81,42 @@ useEffect(() => {
 
 useEffect(() => {
   function handleKeyDown(e: KeyboardEvent) {
-    if (e.code === "Space") {
-      e.preventDefault();
+    if (e.code !== "Space") return;
+    e.preventDefault();
 
-      // If timer is running → stop
-      if (isRunning) {
-        stopTimer();
-        return;
-      }
-
-      // If timer is not running → user is holding space
-      if (!isHoldingSpace) {
-        setIsHoldingSpace(true);
-        setIsReady(true); // show READY state
-      }
+    // If timer is running → stop timer
+    if (isRunning) {
+      stopTimer();
+      return;
     }
+
+    // If inspection is active → READY for starting timer
+    if (inspectionActive) {
+      setIsReady(true);
+      return;
+    }
+
+    // If inspection is NOT active (normal solve) → READY
+    setIsReady(true);
   }
 
   function handleKeyUp(e: KeyboardEvent) {
-    if (e.code === "Space") {
-      e.preventDefault();
+    if (e.code !== "Space") return;
+    e.preventDefault();
 
-      // If user was holding space and timer is not running → start
-      if (isHoldingSpace && !isRunning) {
-        setIsHoldingSpace(false);
-        setIsReady(false);
-        startTimer();
-      }
+    // If timer is running → ignore
+    if (isRunning) return;
+
+    // If inspection is active → start inspection countdown
+    if (inspectionActive) {
+      setIsReady(false);
+      // inspection already counts down via effect
+      return;
     }
+
+    // If inspection is finished → start the real timer
+    setIsReady(false);
+    startTimer();
   }
 
   window.addEventListener("keydown", handleKeyDown);
@@ -118,7 +126,8 @@ useEffect(() => {
     window.removeEventListener("keydown", handleKeyDown);
     window.removeEventListener("keyup", handleKeyUp);
   };
-}, [isRunning, isHoldingSpace]);
+}, [isRunning, inspectionActive]);
+
   // -------------------------------
   // Timer logic
   // -------------------------------
@@ -137,17 +146,47 @@ useEffect(() => {
   });
 }
 
-  function stopTimer() {
-    if (timerRef.current) cancelAnimationFrame(timerRef.current);
-    setIsRunning(false);
+ function stopTimer() {
+  if (timerRef.current) cancelAnimationFrame(timerRef.current);
+  setIsRunning(false);
 
-    const finalTime = timeMs;
+  const finalTime = timeMs;
+  let final = finalTime;
 
-    let final = finalTime;
+  if (inspectionPenalty === "+2") final += 2000;
 
-if (inspectionPenalty === "+2") {
-  final += 2000;
+  const solve: Solve = {
+    id: crypto.randomUUID(),
+    timeMs: finalTime,
+    finalTimeMs: final,
+    penalty: inspectionPenalty,
+    puzzle: "3x3",
+    scramble,
+    timestamp: Date.now(),
+  };
+
+  // Save solve
+  setSolves((prev) => [...prev, solve]);
+
+  // Save to session
+  if (activeSessionId) {
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === activeSessionId
+          ? { ...s, solves: [...s.solves, solve.id] }
+          : s
+      )
+    );
+  }
+
+  // Reset for next solve
+  setInspectionActive(true);
+  setInspectionTimeLeft(15);
+  setInspectionPenalty("OK");
+  setTimeMs(0);
+  setScramble(regenerateScramble());
 }
+
 
 const solve: Solve = {
   id: crypto.randomUUID(),
@@ -310,6 +349,7 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
 
 
 
