@@ -203,6 +203,11 @@ export default function TimerPage() {
       )
     : solves;
 
+  useEffect(() => {
+  setScramble(regenerateScramble(settings));
+}, [settings]);
+
+
   // --------------------------------------
   // JSX
   // --------------------------------------
@@ -229,7 +234,8 @@ export default function TimerPage() {
 
       <ScrambleDisplay
         scramble={scramble}
-        onRegenerate={() => setScramble(regenerateScramble())}
+        onRegenerate={() => regenerateScramble(settings)
+}
       />
 
       <div onClick={handleTap} className="cursor-pointer select-none">
@@ -313,9 +319,6 @@ function saveSolves(solves: Solve[]) {
   } catch {}
 }
 
-useEffect(() => {
-  setScramble(regenerateScramble(settings));
-}, [settings]);
 
 function regenerateScramble(settings: ScrambleSettingsType) {
   const faces = ["R", "L", "U", "D", "F", "B"];
@@ -366,6 +369,7 @@ function regenerateScramble(settings: ScrambleSettingsType) {
 
   return scramble.join(" ");
 }
+
 
 
 
