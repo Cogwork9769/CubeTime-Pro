@@ -14,40 +14,32 @@ import SessionSelector from "../components/timer/SessionSelector";
 // --------------------------------------
 // Timer States
 // --------------------------------------
-type TimerState =
-  | "IDLE"
-  | "READY"
-  | "INSPECTION"
-  | "RUNNING"
-  | "LOCKOUT";
+type TimerState = "IDLE" | "INSPECTION" | "RUNNING" | "LOCKOUT";
 
 // --------------------------------------
 // Main Component
 // --------------------------------------
 export default function TimerPage() {
-  // -------------------------------
-  // Session state
-  // -------------------------------
+  // Sessions
   const [sessions, setSessions] = useState<Session[]>(loadSessions);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
-  // -------------------------------
-  // Solve state
-  // -------------------------------
+  // Solves
   const [solves, setSolves] = useState<Solve[]>(loadSolves);
 
-  // -------------------------------
-  // Timer + inspection state
-  // -------------------------------
+  // Timer state
   const [state, setState] = useState<TimerState>("IDLE");
   const [timeMs, setTimeMs] = useState(0);
+
+  // READY is visual only
+  const [isReady, setIsReady] = useState(false);
+
+  // Inspection
   const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
   const [inspectionPenalty, setInspectionPenalty] =
     useState<"OK" | "+2" | "DNF">("OK");
 
-  // -------------------------------
   // Scramble + settings
-  // -------------------------------
   const [scramble, setScramble] = useState(regenerateScramble());
   const [settings, setSettings] = useState<ScrambleSettingsType>({
     length: 20,
@@ -56,13 +48,13 @@ export default function TimerPage() {
     excludedMoves: [],
   });
 
-  // -------------------------------
-  // Effects
-  // -------------------------------
+  // Save to localStorage
   useEffect(() => saveSessions(sessions), [sessions]);
   useEffect(() => saveSolves(solves), [solves]);
 
-  // --- Inspection countdown ---
+  // --------------------------------------
+  // Inspection countdown
+  // --------------------------------------
   useEffect(() => {
     if (state !== "INSPECTION") return;
 
@@ -73,7 +65,7 @@ export default function TimerPage() {
     return () => clearTimeout(id);
   }, [inspectionTimeLeft, state]);
 
-  // --- WCA penalties ---
+  // Penalties
   useEffect(() => {
     if (state !== "INSPECTION") return;
 
@@ -81,9 +73,9 @@ export default function TimerPage() {
     if (inspectionTimeLeft === -2) setInspectionPenalty("DNF");
   }, [inspectionTimeLeft, state]);
 
-  // -------------------------------
+  // --------------------------------------
   // Timer logic
-  // -------------------------------
+  // --------------------------------------
   const timerRef = useRef<number | null>(null);
 
   function startTimer() {
@@ -135,68 +127,50 @@ export default function TimerPage() {
     setInspectionTimeLeft(15);
     setInspectionPenalty("OK");
     setScramble(regenerateScramble());
+    setIsReady(false);
 
-    // Prevent accidental re-trigger
+    // Prevent accidental restart
     setTimeout(() => setState("IDLE"), 150);
   }
 
-  // -------------------------------
+  // --------------------------------------
   // Key handling
-  // -------------------------------
+  // --------------------------------------
   useEffect(() => {
-   function handleKeyDown(e: KeyboardEvent) {
-  if (e.code !== "Space") return;
-  e.preventDefault();
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.code !== "Space") return;
+      e.preventDefault();
 
-  if (state === "RUNNING") {
-    stopTimer();
-    return;
-  }
+      if (state === "RUNNING") {
+        stopTimer();
+        return;
+      }
 
-  // IDLE → READY
-  if (state === "IDLE") {
-    setState("READY");
-    return;
-  }
-
-  // INSPECTION → show READY but DO NOT leave INSPECTION
-  if (state === "INSPECTION") {
-    setState("READY");
-
-    // Immediately restore INSPECTION so countdown continues
-    requestAnimationFrame(() => {
-      setState("INSPECTION");
-    });
-
-    return;
-  }
-}
+      // READY is visual only
+      setIsReady(true);
+    }
 
     function handleKeyUp(e: KeyboardEvent) {
       if (e.code !== "Space") return;
       e.preventDefault();
 
+      setIsReady(false);
+
       if (state === "LOCKOUT") return;
 
-      if (state === "READY") {
-        // READY → INSPECTION
-       if (inspectionTimeLeft === 15) {
-          setState("INSPECTION");
-          return;
-        }
-
-        // READY → RUNNING (skip inspection)
-        if (state === "READY" && inspectionTimeLeft < 15) {
-          setState("IDLE");
-          startTimer();
-          return;
-        }
+      // IDLE → start inspection
+      if (state === "IDLE") {
+        setInspectionTimeLeft(15);
+        setInspectionPenalty("OK");
+        setState("INSPECTION");
+        return;
       }
 
+      // INSPECTION → start timer
       if (state === "INSPECTION") {
-        // Release during inspection → start timer
-        setState("IDLE");
+        setState("RUNNING");
         startTimer();
+        return;
       }
     }
 
@@ -207,11 +181,11 @@ export default function TimerPage() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [state, inspectionTimeLeft]);
+  }, [state]);
 
-  // -------------------------------
+  // --------------------------------------
   // Tap handling (mobile)
-  // -------------------------------
+  // --------------------------------------
   function handleTap() {
     if (state === "RUNNING") {
       stopTimer();
@@ -219,19 +193,22 @@ export default function TimerPage() {
     }
 
     if (state === "IDLE") {
+      setInspectionTimeLeft(15);
+      setInspectionPenalty("OK");
       setState("INSPECTION");
       return;
     }
 
     if (state === "INSPECTION") {
+      setState("RUNNING");
       startTimer();
       return;
     }
   }
 
-  // -------------------------------
-  // Derived solves
-  // -------------------------------
+  // --------------------------------------
+  // Active solves
+  // --------------------------------------
   const activeSolves =
     activeSessionId &&
     sessions.find((s) => s.id === activeSessionId)?.solves.length
@@ -242,9 +219,9 @@ export default function TimerPage() {
         )
       : [];
 
-  // -------------------------------
+  // --------------------------------------
   // JSX
-  // -------------------------------
+  // --------------------------------------
   return (
     <div className="min-h-screen bg-black text-white p-4 flex flex-col gap-4">
       <SessionSelector
@@ -272,13 +249,15 @@ export default function TimerPage() {
       />
 
       <div onClick={handleTap} className="cursor-pointer select-none">
-       <TimerDisplay
-  timeMs={timeMs}
-  isRunning={state === "RUNNING"}
-  isReady={state === "READY"}
-/>
-
-        <InspectionTimer timeLeft={inspectionTimeLeft} />
+        <TimerDisplay
+          timeMs={timeMs}
+          isRunning={state === "RUNNING"}
+          isReady={isReady}
+        />
+        <InspectionTimer
+          timeLeft={inspectionTimeLeft}
+          penalty={inspectionPenalty}
+        />
       </div>
 
       <div className="border border-gray-700 rounded-lg p-3">
@@ -356,6 +335,3 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
-
-
-
