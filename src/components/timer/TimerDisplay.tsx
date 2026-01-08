@@ -8,14 +8,18 @@ function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  const centis = Math.floor((ms % 1000) / 10);
+
+  // Three decimal places (000–999)
+  const millis = Math.floor(ms % 1000)
+    .toString()
+    .padStart(3, "0");
 
   const mm = minutes.toString();
   const ss = seconds.toString().padStart(2, "0");
-  const cc = centis.toString().padStart(2, "0");
 
-  return minutes > 0 ? `${mm}:${ss}.${cc}` : `${seconds}.${cc}`;
+  return minutes > 0 ? `${mm}:${ss}.${millis}` : `${seconds}.${millis}`;
 }
+
 
 export default function TimerDisplay({ timeMs, isRunning, isReady }: Props) {
   let color = "text-white";
@@ -31,3 +35,4 @@ export default function TimerDisplay({ timeMs, isRunning, isReady }: Props) {
     </div>
   );
 }
+
