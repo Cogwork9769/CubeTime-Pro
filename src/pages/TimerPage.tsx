@@ -211,7 +211,7 @@ export default function TimerPage() {
   // --------------------------------------
   const activeSolves =
     activeSessionId &&
-    sessions.find((s) => s.id === activeSessionId)?.solves.length
+    sessions.find((s) => s.id === activeSessionId)
       ? solves.filter((s) =>
           sessions
             .find((sess) => sess.id === activeSessionId)
@@ -335,3 +335,4 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
