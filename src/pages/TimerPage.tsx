@@ -123,7 +123,6 @@ export default function TimerPage() {
 
     // Reset
     setState("LOCKOUT");
-    setTimeMs(0);
     setInspectionTimeLeft(15);
     setInspectionPenalty("OK");
     setScramble(regenerateScramble());
@@ -209,15 +208,14 @@ export default function TimerPage() {
   // --------------------------------------
   // Active solves
   // --------------------------------------
-  const activeSolves =
-    activeSessionId &&
-    sessions.find((s) => s.id === activeSessionId)
-      ? solves.filter((s) =>
-          sessions
-            .find((sess) => sess.id === activeSessionId)
-            ?.solves.includes(s.id)
-        )
-      : [];
+const activeSolves = activeSessionId
+  ? solves.filter((s) =>
+      sessions
+        .find((sess) => sess.id === activeSessionId)
+        ?.solves.includes(s.id)
+    )
+  : solves; // <-- show ALL solves when no session selected
+
 
   // --------------------------------------
   // JSX
@@ -335,4 +333,5 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
 
