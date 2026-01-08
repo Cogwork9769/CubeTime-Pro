@@ -144,27 +144,33 @@ export default function TimerPage() {
   // Key handling
   // -------------------------------
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.code !== "Space") return;
-      e.preventDefault();
+   function handleKeyDown(e: KeyboardEvent) {
+  if (e.code !== "Space") return;
+  e.preventDefault();
 
-      if (state === "RUNNING") {
-        stopTimer();
-        return;
-      }
+  if (state === "RUNNING") {
+    stopTimer();
+    return;
+  }
 
-     if (state === "IDLE") {
-  setState("READY");
+  // IDLE → READY
+  if (state === "IDLE") {
+    setState("READY");
+    return;
+  }
+
+  // INSPECTION → show READY but DO NOT leave INSPECTION
+  if (state === "INSPECTION") {
+    setState("READY");
+
+    // Immediately restore INSPECTION so countdown continues
+    requestAnimationFrame(() => {
+      setState("INSPECTION");
+    });
+
+    return;
+  }
 }
-
-if (state === "INSPECTION") {
-  // Show READY visually, but DO NOT leave INSPECTION state
-  setState("READY");
-  // Immediately restore INSPECTION so countdown continues
-  setTimeout(() => setState("INSPECTION"), 0);
-}
-
-    }
 
     function handleKeyUp(e: KeyboardEvent) {
       if (e.code !== "Space") return;
@@ -350,5 +356,6 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
 
 
