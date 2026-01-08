@@ -314,9 +314,38 @@ function saveSolves(solves: Solve[]) {
 }
 
 function regenerateScramble() {
-  const moves = ["R", "L", "U", "D", "F", "B"];
-  return Array.from({ length: 20 }, () =>
-    moves[Math.floor(Math.random() * moves.length)]
-  ).join(" ");
+  const faces = ["R", "L", "U", "D", "F", "B"];
+
+  // Opposite faces share an axis:
+  // R/L, U/D, F/B
+  const axisMap: Record<string, number> = {
+    R: 0, L: 0,
+    U: 1, D: 1,
+    F: 2, B: 2,
+  };
+
+  const modifiers = ["", "'", "2"];
+  const length = 20;
+
+  const scramble: string[] = [];
+  let lastAxis = -1;
+
+  for (let i = 0; i < length; i++) {
+    let face: string;
+    let axis: number;
+
+    do {
+      face = faces[Math.floor(Math.random() * faces.length)];
+      axis = axisMap[face];
+    } while (axis === lastAxis); 
+    // prevents same face AND opposite face
+
+    lastAxis = axis;
+
+    const modifier = modifiers[Math.floor(Math.random() * modifiers.length)];
+    scramble.push(face + modifier);
+  }
+
+  return scramble.join(" ");
 }
 
