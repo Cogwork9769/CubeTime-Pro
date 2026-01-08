@@ -21,21 +21,24 @@ export default function TimerPage() {
 
   const [state, setState] = useState<TimerState>("IDLE");
   const [timeMs, setTimeMs] = useState(0);
-
   const [isReady, setIsReady] = useState(false);
 
   const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
   const [inspectionPenalty, setInspectionPenalty] =
     useState<"OK" | "+2" | "DNF">("OK");
-  
- const [settings, setSettings] = useState<ScrambleSettingsType>({
+
+  // SETTINGS FIRST
+  const [settings, setSettings] = useState<ScrambleSettingsType>({
     length: 20,
     useDoubleMoves: true,
     usePrimeMoves: true,
     excludedMoves: [],
   });
-  const [scramble, setScramble] = useState(() => regenerateScramble(settings));
- 
+
+  // SCRAMBLE SECOND (settings must exist first)
+  const [scramble, setScramble] = useState(() =>
+    regenerateScramble(settings)
+  );
 
   useEffect(() => saveSessions(sessions), [sessions]);
   useEffect(() => saveSolves(solves), [solves]);
@@ -66,7 +69,7 @@ export default function TimerPage() {
   }, [inspectionTimeLeft, state]);
 
   // --------------------------------------
-  // Timer logic (correct, stable)
+  // Timer logic
   // --------------------------------------
   function startTimer() {
     runningRef.current = true;
@@ -86,10 +89,12 @@ export default function TimerPage() {
     runningRef.current = false;
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
-    // Compute final time directly (never trust stale state)
     const raw = performance.now() - startTimeRef.current;
-    let final = raw;
 
+    // Force UI to match saved solve exactly
+    setTimeMs(raw);
+
+    let final = raw;
     if (inspectionPenalty === "+2") final += 2000;
 
     const solve: Solve = {
@@ -148,7 +153,7 @@ export default function TimerPage() {
       if (state === "LOCKOUT") return;
 
       if (state === "IDLE") {
-        setTimeMs(0); // csTimer reset
+        setTimeMs(0);
         setInspectionTimeLeft(15);
         setInspectionPenalty("OK");
         setState("INSPECTION");
@@ -204,11 +209,12 @@ export default function TimerPage() {
       )
     : solves;
 
-<ScrambleDisplay
-  scramble={scramble}
-  onRegenerate={() => setScramble(regenerateScramble(settings))}
-/>
-
+  // --------------------------------------
+  // Regenerate scramble when settings change
+  // --------------------------------------
+  useEffect(() => {
+    setScramble(regenerateScramble(settings));
+  }, [settings]);
 
   // --------------------------------------
   // JSX
@@ -236,8 +242,9 @@ export default function TimerPage() {
 
       <ScrambleDisplay
         scramble={scramble}
-        onRegenerate={() => regenerateScramble(settings)
-}
+        onRegenerate={() =>
+          setScramble(regenerateScramble(settings))
+        }
       />
 
       <div onClick={handleTap} className="cursor-pointer select-none">
@@ -262,7 +269,9 @@ export default function TimerPage() {
         solves={activeSolves}
         onUpdatePenalty={(id, p) =>
           setSolves((prev) =>
-            prev.map((s) => (s.id === id ? { ...s, penalty: p } : s))
+            prev.map((s) =>
+              s.id === id ? { ...s, penalty: p } : s
+            )
           )
         }
         onDeleteSolve={(id) => {
@@ -293,7 +302,7 @@ const STORAGE_SOLVES_KEY = "cubeTimer_solves";
 
 function loadSessions(): Session[] {
   try {
-const raw = localStorage.getItem(STORAGE_SESSIONS_KEY);
+    const raw = localStorage.getItem(STORAGE_SESSIONS_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -321,7 +330,9 @@ function saveSolves(solves: Solve[]) {
   } catch {}
 }
 
-
+// --------------------------------------
+// Scramble generator
+// --------------------------------------
 function regenerateScramble(settings: ScrambleSettingsType) {
   const faces = ["R", "L", "U", "D", "F", "B"];
 
@@ -331,12 +342,10 @@ function regenerateScramble(settings: ScrambleSettingsType) {
     F: 2, B: 2,
   };
 
-  // Build allowed modifiers based on settings
   const modifiers: string[] = [""];
   if (settings.usePrimeMoves) modifiers.push("'");
   if (settings.useDoubleMoves) modifiers.push("2");
 
-  // Filter out excluded faces
   const allowedFaces = faces.filter(
     (f) => !settings.excludedMoves.includes(f)
   );
@@ -352,13 +361,13 @@ function regenerateScramble(settings: ScrambleSettingsType) {
     let face: string;
     let axis: number;
 
-    // ensure different axis than previous
     let safety = 0;
     do {
-      face = allowedFaces[Math.floor(Math.random() * allowedFaces.length)];
+      face =
+        allowedFaces[Math.floor(Math.random() * allowedFaces.length)];
       axis = axisMap[face];
       safety++;
-      if (safety > 20) break; // avoid infinite loop if over-filtered
+      if (safety > 20) break;
     } while (axis === lastAxis);
 
     lastAxis = axis;
@@ -371,8 +380,3 @@ function regenerateScramble(settings: ScrambleSettingsType) {
 
   return scramble.join(" ");
 }
-
-
-
-
-
