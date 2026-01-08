@@ -89,23 +89,24 @@ export default function TimerPage() {
     runningRef.current = false;
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
-    const raw = performance.now() - startTimeRef.current;
+   const raw = performance.now() - startTimeRef.current;
 
-    // Force UI to match saved solve exactly
-    setTimeMs(raw);
+// Match TimerDisplay formatting exactly
+const roundedRaw = Math.floor(raw);
 
-    let final = raw;
-    if (inspectionPenalty === "+2") final += 2000;
+let final = roundedRaw;
+if (inspectionPenalty === "+2") final += 2000;
 
-    const solve: Solve = {
-      id: crypto.randomUUID(),
-      timeMs: raw,
-      finalTimeMs: final,
-      penalty: inspectionPenalty,
-      puzzle: "3x3",
-      scramble,
-      timestamp: Date.now(),
-    };
+const solve: Solve = {
+  id: crypto.randomUUID(),
+  timeMs: roundedRaw,
+  finalTimeMs: final,
+  penalty: inspectionPenalty,
+  puzzle: "3x3",
+  scramble,
+  timestamp: Date.now(),
+};
+
 
     setSolves((prev) => [...prev, solve]);
 
@@ -380,3 +381,4 @@ function regenerateScramble(settings: ScrambleSettingsType) {
 
   return scramble.join(" ");
 }
+
