@@ -1,5 +1,6 @@
 type Props = {
-  timeLeft: number; // seconds
+  timeLeft: number;
+  penalty: "OK" | "+2" | "DNF";
 };
 
 export default function InspectionTimer({ timeLeft }: Props) {
@@ -15,3 +16,4 @@ export default function InspectionTimer({ timeLeft }: Props) {
     </div>
   );
 }
+
