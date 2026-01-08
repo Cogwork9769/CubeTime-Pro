@@ -28,7 +28,7 @@ export default function TimerPage() {
   const [inspectionPenalty, setInspectionPenalty] =
     useState<"OK" | "+2" | "DNF">("OK");
 
-  const [scramble, setScramble] = useState(regenerateScramble());
+  const [scramble, setScramble] = useState(() => regenerateScramble(settings));
   const [settings, setSettings] = useState<ScrambleSettingsType>({
     length: 20,
     useDoubleMoves: true,
@@ -116,7 +116,7 @@ export default function TimerPage() {
     setState("LOCKOUT");
     setInspectionTimeLeft(15);
     setInspectionPenalty("OK");
-    setScramble(regenerateScramble());
+    setScramble(regenerateScramble(settings));
     setIsReady(false);
 
     setTimeout(() => setState("IDLE"), 150);
@@ -313,39 +313,59 @@ function saveSolves(solves: Solve[]) {
   } catch {}
 }
 
-function regenerateScramble() {
+useEffect(() => {
+  setScramble(regenerateScramble(settings));
+}, [settings]);
+
+function regenerateScramble(settings: ScrambleSettingsType) {
   const faces = ["R", "L", "U", "D", "F", "B"];
 
-  // Opposite faces share an axis:
-  // R/L, U/D, F/B
   const axisMap: Record<string, number> = {
     R: 0, L: 0,
     U: 1, D: 1,
     F: 2, B: 2,
   };
 
-  const modifiers = ["", "'", "2"];
-  const length = 20;
+  // Build allowed modifiers based on settings
+  const modifiers: string[] = [""];
+  if (settings.usePrimeMoves) modifiers.push("'");
+  if (settings.useDoubleMoves) modifiers.push("2");
+
+  // Filter out excluded faces
+  const allowedFaces = faces.filter(
+    (f) => !settings.excludedMoves.includes(f)
+  );
+
+  const length = settings.length ?? 20;
 
   const scramble: string[] = [];
   let lastAxis = -1;
 
   for (let i = 0; i < length; i++) {
+    if (allowedFaces.length === 0 || modifiers.length === 0) break;
+
     let face: string;
     let axis: number;
 
+    // ensure different axis than previous
+    let safety = 0;
     do {
-      face = faces[Math.floor(Math.random() * faces.length)];
+      face = allowedFaces[Math.floor(Math.random() * allowedFaces.length)];
       axis = axisMap[face];
-    } while (axis === lastAxis); 
-    // prevents same face AND opposite face
+      safety++;
+      if (safety > 20) break; // avoid infinite loop if over-filtered
+    } while (axis === lastAxis);
 
     lastAxis = axis;
 
-    const modifier = modifiers[Math.floor(Math.random() * modifiers.length)];
+    const modifier =
+      modifiers[Math.floor(Math.random() * modifiers.length)];
+
     scramble.push(face + modifier);
   }
 
   return scramble.join(" ");
 }
+
+
 
