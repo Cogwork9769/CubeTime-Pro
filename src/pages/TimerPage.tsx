@@ -285,7 +285,7 @@ const STORAGE_SOLVES_KEY = "cubeTimer_solves";
 
 function loadSessions(): Session[] {
   try {
-    const raw = local.localStorage.getItem(STORAGE_SESSIONS_KEY);
+const raw = localStorage.getItem(STORAGE_SESSIONS_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -319,3 +319,4 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
