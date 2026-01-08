@@ -11,35 +11,23 @@ import StatsPanel from "../components/timer/StatsPanel";
 import SolveList from "../components/timer/SolveList";
 import SessionSelector from "../components/timer/SessionSelector";
 
-// --------------------------------------
-// Timer States
-// --------------------------------------
 type TimerState = "IDLE" | "INSPECTION" | "RUNNING" | "LOCKOUT";
 
-// --------------------------------------
-// Main Component
-// --------------------------------------
 export default function TimerPage() {
-  // Sessions
   const [sessions, setSessions] = useState<Session[]>(loadSessions);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
-  // Solves
   const [solves, setSolves] = useState<Solve[]>(loadSolves);
 
-  // Timer state
   const [state, setState] = useState<TimerState>("IDLE");
   const [timeMs, setTimeMs] = useState(0);
 
-  // READY is visual only
   const [isReady, setIsReady] = useState(false);
 
-  // Inspection
   const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
   const [inspectionPenalty, setInspectionPenalty] =
     useState<"OK" | "+2" | "DNF">("OK");
 
-  // Scramble + settings
   const [scramble, setScramble] = useState(regenerateScramble());
   const [settings, setSettings] = useState<ScrambleSettingsType>({
     length: 20,
@@ -48,13 +36,15 @@ export default function TimerPage() {
     excludedMoves: [],
   });
 
-  // Save to localStorage
   useEffect(() => saveSessions(sessions), [sessions]);
   useEffect(() => saveSolves(solves), [solves]);
 
-  // --------------------------------------
+  // Timer refs
+  const timerRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const runningRef = useRef(false);
+
   // Inspection countdown
-  // --------------------------------------
   useEffect(() => {
     if (state !== "INSPECTION") return;
 
@@ -65,7 +55,6 @@ export default function TimerPage() {
     return () => clearTimeout(id);
   }, [inspectionTimeLeft, state]);
 
-  // Penalties
   useEffect(() => {
     if (state !== "INSPECTION") return;
 
@@ -73,23 +62,22 @@ export default function TimerPage() {
     if (inspectionTimeLeft === -2) setInspectionPenalty("DNF");
   }, [inspectionTimeLeft, state]);
 
-  // --------------------------------------
-  // Timer logic
-  // --------------------------------------
-  const timerRef = useRef<number | null>(null);
-
   function startTimer() {
+    runningRef.current = true;
+    startTimeRef.current = performance.now();
     setState("RUNNING");
 
-    const start = performance.now();
-
-    timerRef.current = requestAnimationFrame(function tick(now) {
-      setTimeMs(now - start);
+    function tick(now: number) {
+      if (!runningRef.current) return;
+      setTimeMs(now - startTimeRef.current);
       timerRef.current = requestAnimationFrame(tick);
-    });
+    }
+
+    timerRef.current = requestAnimationFrame(tick);
   }
 
   function stopTimer() {
+    runningRef.current = false;
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
     const raw = timeMs;
@@ -107,10 +95,8 @@ export default function TimerPage() {
       timestamp: Date.now(),
     };
 
-    // Save solve
     setSolves((prev) => [...prev, solve]);
 
-    // Attach to session
     if (activeSessionId) {
       setSessions((prev) =>
         prev.map((s) =>
@@ -121,20 +107,15 @@ export default function TimerPage() {
       );
     }
 
-    // Reset
     setState("LOCKOUT");
     setInspectionTimeLeft(15);
     setInspectionPenalty("OK");
     setScramble(regenerateScramble());
     setIsReady(false);
 
-    // Prevent accidental restart
     setTimeout(() => setState("IDLE"), 150);
   }
 
-  // --------------------------------------
-  // Key handling
-  // --------------------------------------
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.code !== "Space") return;
@@ -145,7 +126,6 @@ export default function TimerPage() {
         return;
       }
 
-      // READY is visual only
       setIsReady(true);
     }
 
@@ -157,17 +137,15 @@ export default function TimerPage() {
 
       if (state === "LOCKOUT") return;
 
-      // IDLE → start inspection
       if (state === "IDLE") {
+        setTimeMs(0); // csTimer reset
         setInspectionTimeLeft(15);
         setInspectionPenalty("OK");
         setState("INSPECTION");
         return;
       }
 
-      // INSPECTION → start timer
       if (state === "INSPECTION") {
-        setState("RUNNING");
         startTimer();
         return;
       }
@@ -182,9 +160,6 @@ export default function TimerPage() {
     };
   }, [state]);
 
-  // --------------------------------------
-  // Tap handling (mobile)
-  // --------------------------------------
   function handleTap() {
     if (state === "RUNNING") {
       stopTimer();
@@ -192,6 +167,7 @@ export default function TimerPage() {
     }
 
     if (state === "IDLE") {
+      setTimeMs(0);
       setInspectionTimeLeft(15);
       setInspectionPenalty("OK");
       setState("INSPECTION");
@@ -199,27 +175,19 @@ export default function TimerPage() {
     }
 
     if (state === "INSPECTION") {
-      setState("RUNNING");
       startTimer();
       return;
     }
   }
 
-  // --------------------------------------
-  // Active solves
-  // --------------------------------------
-const activeSolves = activeSessionId
-  ? solves.filter((s) =>
-      sessions
-        .find((sess) => sess.id === activeSessionId)
-        ?.solves.includes(s.id)
-    )
-  : solves; // <-- show ALL solves when no session selected
+  const activeSolves = activeSessionId
+    ? solves.filter((s) =>
+        sessions
+          .find((sess) => sess.id === activeSessionId)
+          ?.solves.includes(s.id)
+      )
+    : solves;
 
-
-  // --------------------------------------
-  // JSX
-  // --------------------------------------
   return (
     <div className="min-h-screen bg-black text-white p-4 flex flex-col gap-4">
       <SessionSelector
@@ -291,9 +259,6 @@ const activeSolves = activeSessionId
   );
 }
 
-// --------------------------------------
-// Helpers
-// --------------------------------------
 const STORAGE_SESSIONS_KEY = "cubeTimer_sessions";
 const STORAGE_SOLVES_KEY = "cubeTimer_solves";
 
@@ -333,5 +298,3 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
-
-
