@@ -27,14 +27,15 @@ export default function TimerPage() {
   const [inspectionTimeLeft, setInspectionTimeLeft] = useState(15);
   const [inspectionPenalty, setInspectionPenalty] =
     useState<"OK" | "+2" | "DNF">("OK");
-
-  const [scramble, setScramble] = useState(() => regenerateScramble(settings));
-  const [settings, setSettings] = useState<ScrambleSettingsType>({
+  
+ const [settings, setSettings] = useState<ScrambleSettingsType>({
     length: 20,
     useDoubleMoves: true,
     usePrimeMoves: true,
     excludedMoves: [],
   });
+  const [scramble, setScramble] = useState(() => regenerateScramble(settings));
+ 
 
   useEffect(() => saveSessions(sessions), [sessions]);
   useEffect(() => saveSolves(solves), [solves]);
@@ -203,9 +204,10 @@ export default function TimerPage() {
       )
     : solves;
 
-  useEffect(() => {
-  setScramble(regenerateScramble(settings));
-}, [settings]);
+<ScrambleDisplay
+  scramble={scramble}
+  onRegenerate={() => setScramble(regenerateScramble(settings))}
+/>
 
 
   // --------------------------------------
@@ -369,6 +371,7 @@ function regenerateScramble(settings: ScrambleSettingsType) {
 
   return scramble.join(" ");
 }
+
 
 
 
