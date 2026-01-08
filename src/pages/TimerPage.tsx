@@ -44,7 +44,9 @@ export default function TimerPage() {
   const startTimeRef = useRef<number>(0);
   const runningRef = useRef(false);
 
+  // --------------------------------------
   // Inspection countdown
+  // --------------------------------------
   useEffect(() => {
     if (state !== "INSPECTION") return;
 
@@ -62,6 +64,9 @@ export default function TimerPage() {
     if (inspectionTimeLeft === -2) setInspectionPenalty("DNF");
   }, [inspectionTimeLeft, state]);
 
+  // --------------------------------------
+  // Timer logic (correct, stable)
+  // --------------------------------------
   function startTimer() {
     runningRef.current = true;
     startTimeRef.current = performance.now();
@@ -80,7 +85,8 @@ export default function TimerPage() {
     runningRef.current = false;
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
-    const raw = timeMs;
+    // Compute final time directly (never trust stale state)
+    const raw = performance.now() - startTimeRef.current;
     let final = raw;
 
     if (inspectionPenalty === "+2") final += 2000;
@@ -116,6 +122,9 @@ export default function TimerPage() {
     setTimeout(() => setState("IDLE"), 150);
   }
 
+  // --------------------------------------
+  // Key handling
+  // --------------------------------------
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.code !== "Space") return;
@@ -160,6 +169,9 @@ export default function TimerPage() {
     };
   }, [state]);
 
+  // --------------------------------------
+  // Tap handling (mobile)
+  // --------------------------------------
   function handleTap() {
     if (state === "RUNNING") {
       stopTimer();
@@ -180,6 +192,9 @@ export default function TimerPage() {
     }
   }
 
+  // --------------------------------------
+  // Active solves
+  // --------------------------------------
   const activeSolves = activeSessionId
     ? solves.filter((s) =>
         sessions
@@ -188,6 +203,9 @@ export default function TimerPage() {
       )
     : solves;
 
+  // --------------------------------------
+  // JSX
+  // --------------------------------------
   return (
     <div className="min-h-screen bg-black text-white p-4 flex flex-col gap-4">
       <SessionSelector
@@ -259,12 +277,15 @@ export default function TimerPage() {
   );
 }
 
+// --------------------------------------
+// Helpers
+// --------------------------------------
 const STORAGE_SESSIONS_KEY = "cubeTimer_sessions";
 const STORAGE_SOLVES_KEY = "cubeTimer_solves";
 
 function loadSessions(): Session[] {
   try {
-    const raw = localStorage.getItem(STORAGE_SESSIONS_KEY);
+    const raw = local.localStorage.getItem(STORAGE_SESSIONS_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
