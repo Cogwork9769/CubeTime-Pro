@@ -153,9 +153,17 @@ export default function TimerPage() {
         return;
       }
 
-      if (state === "IDLE" || state === "INSPECTION") {
-        setState("READY");
-      }
+     if (state === "IDLE") {
+  setState("READY");
+}
+
+if (state === "INSPECTION") {
+  // Show READY visually, but DO NOT leave INSPECTION state
+  setState("READY");
+  // Immediately restore INSPECTION so countdown continues
+  setTimeout(() => setState("INSPECTION"), 0);
+}
+
     }
 
     function handleKeyUp(e: KeyboardEvent) {
@@ -342,4 +350,5 @@ function regenerateScramble() {
     moves[Math.floor(Math.random() * moves.length)]
   ).join(" ");
 }
+
 
