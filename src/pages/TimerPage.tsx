@@ -85,49 +85,49 @@ export default function TimerPage() {
     timerRef.current = requestAnimationFrame(tick);
   }
 
-  function stopTimer() {
-    runningRef.current = false;
-    if (timerRef.current) cancelAnimationFrame(timerRef.current);
+function stopTimer() {
+  runningRef.current = false;
+  if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
-   const raw = performance.now() - startTimeRef.current;
+  // Floor immediately so all components use the same value
+  const raw = Math.floor(performance.now() - startTimeRef.current);
 
-// Match TimerDisplay formatting exactly
-const roundedRaw = Math.floor(raw);
+  // Force display to match saved solve
+  setTimeMs(raw);
 
-let final = roundedRaw;
-if (inspectionPenalty === "+2") final += 2000;
+  let final = raw;
+  if (inspectionPenalty === "+2") final += 2000;
 
-const solve: Solve = {
-  id: crypto.randomUUID(),
-  timeMs: roundedRaw,
-  finalTimeMs: final,
-  penalty: inspectionPenalty,
-  puzzle: "3x3",
-  scramble,
-  timestamp: Date.now(),
-};
+  const solve: Solve = {
+    id: crypto.randomUUID(),
+    timeMs: raw,
+    finalTimeMs: final,
+    penalty: inspectionPenalty,
+    puzzle: "3x3",
+    scramble,
+    timestamp: Date.now(),
+  };
 
+  setSolves((prev) => [...prev, solve]);
 
-    setSolves((prev) => [...prev, solve]);
-
-    if (activeSessionId) {
-      setSessions((prev) =>
-        prev.map((s) =>
-          s.id === activeSessionId
-            ? { ...s, solves: [...s.solves, solve.id] }
-            : s
-        )
-      );
-    }
-
-    setState("LOCKOUT");
-    setInspectionTimeLeft(15);
-    setInspectionPenalty("OK");
-    setScramble(regenerateScramble(settings));
-    setIsReady(false);
-
-    setTimeout(() => setState("IDLE"), 150);
+  if (activeSessionId) {
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === activeSessionId
+          ? { ...s, solves: [...s.solves, solve.id] }
+          : s
+      )
+    );
   }
+
+  setState("LOCKOUT");
+  setInspectionTimeLeft(15);
+  setInspectionPenalty("OK");
+  setScramble(regenerateScramble(settings));
+  setIsReady(false);
+
+  setTimeout(() => setState("IDLE"), 150);
+}
 
   // --------------------------------------
   // Key handling
@@ -381,4 +381,5 @@ function regenerateScramble(settings: ScrambleSettingsType) {
 
   return scramble.join(" ");
 }
+
 
