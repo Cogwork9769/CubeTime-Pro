@@ -1,10 +1,10 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "./index.css";
-import TimerPage from "./pages/TimerPage";
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
+import { AppRouter } from './router'
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <TimerPage />
-  </React.StrictMode>
-);
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <BrowserRouter>
+    <AppRouter />
+  </BrowserRouter>
+)

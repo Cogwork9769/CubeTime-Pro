@@ -5,7 +5,7 @@ import type { ScrambleSettingsType } from "./ScrambleGenerator";
 
 type Props = {
   value: ScrambleSettingsType;
-  onChange: React.Dispatch<React.SetStateAction<ScrambleSettingsType>>;
+  onChange: (v: ScrambleSettingsType) => void;
 };
 
 const STORAGE_KEY = "cubeTimer_scrambleSettings";
@@ -94,5 +94,3 @@ export default function ScrambleSettings({ value, onChange }: Props) {
     </div>
   );
 }
-
-
