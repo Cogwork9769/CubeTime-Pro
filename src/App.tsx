@@ -1,5 +1,10 @@
-import TimerPage from "./pages/TimerPage";
+import { BrowserRouter } from "react-router-dom"
+import AppRouter from "./router"
 
 export default function App() {
-  return <TimerPage />;
+  return (
+    <BrowserRouter>
+      <AppRouter />
+    </BrowserRouter>
+  )
 }
