@@ -11,7 +11,7 @@ export default function WcaCallback() {
 
       if (!code) return
 
-      const { error } = await supabase.auth.exchangeCodeForSession({ code })
+      const { error } = await supabase.auth.exchangeCodeForSession(code)
 
       if (!error) navigate('/')
     }

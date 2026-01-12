@@ -3,7 +3,7 @@ import HomePage from "./pages/HomePage"
 import LoginPage from "./pages/LoginPage"
 import WcaCallback from "./pages/WcaCallback"
 
-export default function AppRouter() {
+export function AppRouter() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
