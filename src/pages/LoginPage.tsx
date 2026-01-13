@@ -15,12 +15,13 @@ export default function LoginPage() {
     })
   }
 
-  const loginWithWca = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "wca",
-      options: { redirectTo: `${window.location.origin}/wca-callback` }
-    })
+  const loginWithWca = () => {
+    const redirectTo = `${window.location.origin}/wca-callback`
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/authorize?provider=wca&redirect_to=${encodeURIComponent(redirectTo)}`
+    window.location.href = url
   }
+  
+  
 
   return (
     <div style={{ padding: 20 }}>
