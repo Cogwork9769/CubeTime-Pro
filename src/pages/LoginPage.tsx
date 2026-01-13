@@ -1,35 +1,21 @@
-import { supabase } from "../supabaseClient"
+import "./LoginPage.css"
 
 export default function LoginPage() {
-  const loginWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/wca-callback` }
-    })
-  }
+  const redirectTo = `${window.location.origin}/wca-callback`
 
-  const loginWithGithub = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: { redirectTo: `${window.location.origin}/wca-callback` }
-    })
-  }
-
-  const loginWithWca = () => {
-    const redirectTo = `${window.location.origin}/wca-callback`
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/authorize?provider=wca&redirect_to=${encodeURIComponent(redirectTo)}`
+  const login = (provider: string) => {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectTo)}`
     window.location.href = url
   }
-  
-  
 
   return (
-    <div style={{ padding: 20 }}>
+    <div className="login-container">
       <h1>Select login method</h1>
-
-      <button onClick={loginWithGoogle}>Login with Google</button>
-      <button onClick={loginWithGithub}>Login with GitHub</button>
-      <button onClick={loginWithWca}>Login with WCA</button>
+      <div className="login-buttons">
+        <button onClick={() => login("google")}>Login with Google</button>
+        <button onClick={() => login("github")}>Login with GitHub</button>
+        <button onClick={() => login("wca")}>Login with WCA</button>
+      </div>
     </div>
   )
 }
