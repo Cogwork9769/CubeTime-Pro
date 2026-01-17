@@ -1,11 +1,14 @@
 import "./LoginPage.css"
+import { supabase } from "../supabaseClient"
 
 export default function LoginPage() {
-  const redirectTo = `${window.location.origin}/wca-callback`
-
-  const login = (provider: string) => {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectTo)}`
-    window.location.href = url
+  const login = async (provider: "google" | "github" | "wca") => {
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/v1/callback`
+      }
+    })
   }
 
   return (
